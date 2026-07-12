@@ -1,0 +1,49 @@
+/* ========================================
+   エディター全体
+======================================== */
+
+.classic-editor {
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+}
+
+
+/* ========================================
+   ビジュアル編集部分
+======================================== */
+
+.classic-editor-content {
+    min-height: 320px;
+    padding: 16px;
+    box-sizing: border-box;
+    color: #111827;
+    line-height: 1.8;
+    outline: none;
+}
+
+.classic-editor-content:focus {
+    box-shadow: inset 0 0 0 2px #93c5fd;
+}
+
+
+/* ========================================
+   HTML編集部分
+======================================== */
+
+.classic-editor-source {
+    display: none;
+    width: 100%;
+    min-height: 320px;
+    padding: 16px;
+    box-sizing: border-box;
+    color: #e2e8f0;
+    background: #0f172a;
+    border: 0;
+    border-radius: 0;
+    font-family: Consolas, monospace;
+    line-height: 1.7;
+    resize: vertical;
+    outline: none;
+}

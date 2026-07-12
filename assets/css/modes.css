@@ -1,0 +1,39 @@
+/* ========================================
+   ビジュアル・HTML切り替えタブ
+======================================== */
+
+.classic-editor-mode-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 8px 8px 0;
+    background: #f1f5f9;
+}
+
+.classic-editor-mode-tabs button {
+    padding: 7px 14px;
+    color: #475569;
+    background: #e2e8f0;
+    border: 1px solid #cbd5e1;
+    border-bottom: 0;
+    border-radius: 5px 5px 0 0;
+    cursor: pointer;
+}
+
+.classic-editor-mode-tabs button.is-active {
+    color: #1d4ed8;
+    background: #fff;
+}
+
+
+/* ========================================
+   HTML編集モードの表示切り替え
+======================================== */
+
+.classic-editor.is-html-mode .classic-editor-toolbar,
+.classic-editor.is-html-mode .classic-editor-content {
+    display: none;
+}
+
+.classic-editor.is-html-mode .classic-editor-source {
+    display: block;
+}

@@ -1,0 +1,7 @@
+{
+  "id": "classic-editor",
+  "name": "クラシックエディター",
+  "description": "投稿本文に文字装飾エディターを追加します。",
+  "version": "1.0.0",
+  "bootstrap": "bootstrap.php"
+}

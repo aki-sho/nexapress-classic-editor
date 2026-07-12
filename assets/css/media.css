@@ -1,0 +1,95 @@
+/* ========================================
+   メディア選択画面
+======================================== */
+
+.classic-editor-media-dialog {
+    width: min(900px, 90vw);
+    max-height: 85vh;
+    padding: 0;
+    overflow: hidden;
+    background: #fff;
+    border: 0;
+    border-radius: 8px;
+}
+
+.classic-editor-media-dialog::backdrop {
+    background: rgba(15, 23, 42, 0.7);
+}
+
+
+/* ========================================
+   メディア選択画面の上部
+======================================== */
+
+.classic-editor-media-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #cbd5e1;
+}
+
+.classic-editor-media-header h2 {
+    margin: 0;
+    font-size: 20px;
+}
+
+
+/* ========================================
+   読み込み状態
+======================================== */
+
+.classic-editor-media-status {
+    margin: 0;
+    padding: 20px;
+    color: #64748b;
+}
+
+
+/* ========================================
+   画像一覧
+======================================== */
+
+.classic-editor-media-grid {
+    display: grid;
+    grid-template-columns: repeat(
+        auto-fill,
+        minmax(150px, 1fr)
+    );
+    gap: 12px;
+    max-height: 65vh;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.classic-editor-media-item {
+    padding: 8px;
+    text-align: left;
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.classic-editor-media-item:hover {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px #bfdbfe;
+}
+
+.classic-editor-media-item img {
+    display: block;
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    background: #e2e8f0;
+}
+
+.classic-editor-media-item span {
+    display: block;
+    margin-top: 7px;
+    overflow: hidden;
+    color: #1f2937;
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

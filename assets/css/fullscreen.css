@@ -1,0 +1,27 @@
+/* ========================================
+   全画面表示中のページ
+======================================== */
+
+body.classic-editor-fullscreen-open {
+    overflow: hidden;
+}
+
+
+/* ========================================
+   エディターの全画面表示
+======================================== */
+
+.classic-editor.is-fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    border: 0;
+    border-radius: 0;
+}
+
+.classic-editor.is-fullscreen .classic-editor-content,
+.classic-editor.is-fullscreen .classic-editor-source {
+    height: calc(100vh - 110px);
+    min-height: 0;
+    overflow-y: auto;
+}
