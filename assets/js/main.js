@@ -30,7 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
         typeof classicEditor.createTemplate !== 'function' ||
         typeof classicEditor.setupLinks !== 'function' ||
         typeof classicEditor.setupFullscreen !== 'function' ||
-        typeof classicEditor.setupMedia !== 'function'
+        typeof classicEditor.setupMedia !== 'function'  ||
+        typeof classicEditor.setupHtmlTemplates !== 'function'
     ) {
         return;
     }
@@ -144,6 +145,15 @@ document.addEventListener('DOMContentLoaded', () => {
         contentArea,
         selectionManager,
         synchronize
+    });
+
+
+     /*
+     * HTMLテンプレート機能を開始
+     */
+    classicEditor.setupHtmlTemplates({
+        editor,
+        textarea
     });
 
     /*

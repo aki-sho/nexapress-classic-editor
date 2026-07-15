@@ -35,6 +35,7 @@ add_action('admin_head', function (): void {
         __DIR__ . '/assets/css/modes.css',
         __DIR__ . '/assets/css/fullscreen.css',
         __DIR__ . '/assets/css/media.css',
+        __DIR__ . '/assets/css/html-templates.css',
     ];
 
     foreach ($cssFiles as $cssFile) {
@@ -87,6 +88,8 @@ add_action('admin_footer', function (): void {
         __DIR__ . '/assets/js/fullscreen.js',
         __DIR__ . '/assets/js/media.js',
         __DIR__ . '/assets/js/template.js',
+        __DIR__ . '/assets/js/html-template-data.js',
+        __DIR__ . '/assets/js/html-templates.js',
         __DIR__ . '/assets/js/main.js',
     ];
 
