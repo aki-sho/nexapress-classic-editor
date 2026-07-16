@@ -43,7 +43,7 @@ window.NexaPressClassicEditor.setupToolbar = (options) => {
 
 
     /*
-     * 文字サイズと文字色を設定
+     * プルダウンと文字色を設定
      */
     toolbar.addEventListener('change', (event) => {
         const control = event.target;
@@ -55,10 +55,26 @@ window.NexaPressClassicEditor.setupToolbar = (options) => {
             return;
         }
 
-        const command = control.dataset.command;
-        const value = control.value;
+        /*
+         * 配置プルダウンは選択値をコマンドとして使用
+         */
+        const isCommandSelect =
+            control instanceof HTMLSelectElement &&
+            control.hasAttribute('data-command-select');
 
-        if (!command || !value) {
+        const command = isCommandSelect
+            ? control.value
+            : control.dataset.command;
+
+        const value = isCommandSelect
+            ? null
+            : control.value;
+
+        if (!command) {
+            return;
+        }
+
+        if (!isCommandSelect && !value) {
             return;
         }
 
@@ -71,7 +87,7 @@ window.NexaPressClassicEditor.setupToolbar = (options) => {
         synchronize();
 
         /*
-         * 文字サイズ選択を初期表示へ戻す
+         * プルダウンを初期表示へ戻す
          */
         if (control instanceof HTMLSelectElement) {
             control.value = '';

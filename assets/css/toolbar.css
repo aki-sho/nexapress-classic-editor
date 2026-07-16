@@ -39,13 +39,43 @@
     background: #e2e8f0;
 }
 
+/* ========================================
+   プルダウンの横幅
+======================================== */
+
+.classic-editor-toolbar select {
+    flex: 0 0 auto;
+    width: auto !important;
+    max-width: none !important;
+}
+
+.classic-editor-format {
+    width: 140px !important;
+}
+
+.classic-editor-font-size {
+    width: 110px !important;
+}
+
+.classic-editor-align {
+    width: 85px !important;
+}
+
 
 /* ========================================
-   文字色の選択部分
+   文字色
 ======================================== */
 
 .classic-editor-color {
-    display: flex;
+    display: inline-flex;
+    flex: 0 0 auto;
     align-items: center;
     gap: 5px;
+    white-space: nowrap;
+}
+
+.classic-editor-color input {
+    width: 38px !important;
+    min-width: 38px;
+    padding: 2px;
 }

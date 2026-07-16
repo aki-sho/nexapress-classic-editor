@@ -23,6 +23,11 @@ if (
         '/admin/extensions/classic-editor/media',
         'NexaPressClassicEditor\MediaController@index'
     );
+
+    $router->post(
+        '/admin/extensions/classic-editor/media/upload',
+        'NexaPressClassicEditor\MediaController@upload'
+    );
 }
 
 /*
@@ -59,6 +64,10 @@ add_action('admin_footer', function (): void {
     $config = [
         'mediaUrl' => url(
             'admin/extensions/classic-editor/media'
+        ),
+
+        'mediaUploadUrl' => url(
+            'admin/extensions/classic-editor/media/upload'
         ),
     ];
 

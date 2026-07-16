@@ -40,25 +40,40 @@ window.NexaPressClassicEditor.createTemplate = () => {
                 <u>U</u>
             </button>
 
-            <!-- 見出し -->
-            <select data-command="formatBlock" title="見出し">
+            <!-- 文章形式 -->
+            <select
+                class="classic-editor-format"
+                data-command="formatBlock"
+                title="文章形式"
+            >
                 <option value="">文章形式</option>
                 <option value="p">通常文章</option>
-                <option value="h2">見出し2</option>
-                <option value="h3">見出し3</option>
+                <option value="h2">見出しH2</option>
+                <option value="h3">見出しH3</option>
+                <option value="h4">見出しH4</option>
+                <option value="h5">見出しH5</option>
+                <option value="h6">見出しH6</option>
             </select>
 
             <!-- 文字サイズ -->
-            <select data-command="fontSize" title="文字サイズ">
+            <select
+                class="classic-editor-font-size"
+                data-command="fontSize"
+                title="文字サイズ"
+            >
                 <option value="">文字サイズ</option>
+                <option value="1">極小</option>
                 <option value="2">小</option>
                 <option value="3">標準</option>
+                <option value="4">中</option>
                 <option value="5">大</option>
+                <option value="6">特大</option>
+                <option value="7">最大</option>
             </select>
 
             <!-- 文字色 -->
-            <label class="classic-editor-color">
-                文字色
+            <label class="classic-editor-color" title="文字色">
+                <span>文字色</span>
 
                 <input
                     type="color"
@@ -67,30 +82,17 @@ window.NexaPressClassicEditor.createTemplate = () => {
                 >
             </label>
 
-            <!-- 文字揃え -->
-            <button
-                type="button"
-                data-command="justifyLeft"
-                title="左揃え"
+            <!-- 配置 -->
+            <select
+                class="classic-editor-align"
+                data-command-select
+                title="配置"
             >
-                左
-            </button>
-
-            <button
-                type="button"
-                data-command="justifyCenter"
-                title="中央揃え"
-            >
-                中央
-            </button>
-
-            <button
-                type="button"
-                data-command="justifyRight"
-                title="右揃え"
-            >
-                右
-            </button>
+                <option value="">配置</option>
+                <option value="justifyLeft">左</option>
+                <option value="justifyCenter">中央</option>
+                <option value="justifyRight">右</option>
+            </select>
 
             <!-- リスト -->
             <button

@@ -33,6 +33,24 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
             </button>
         </div>
 
+        <form
+            class="classic-editor-media-upload"
+            data-media-upload
+            enctype="multipart/form-data"
+        >
+            <input
+                type="file"
+                name="media_file"
+                accept=".jpg,.jpeg,.png,.gif,.webp"
+                data-media-file
+                required
+            >
+
+            <button type="submit" data-media-submit>
+                画像を登録
+            </button>
+        </form>
+
         <p class="classic-editor-media-status">
             画像を読み込んでいます。
         </p>
@@ -54,10 +72,25 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
         '.classic-editor-media-grid'
     );
 
+    const uploadForm = dialog.querySelector(
+    '[data-media-upload]'
+    );
+
+    const uploadInput = dialog.querySelector(
+        '[data-media-file]'
+    );
+
+    const uploadButton = dialog.querySelector(
+        '[data-media-submit]'
+    );
+
     if (
         !(closeButton instanceof HTMLButtonElement) ||
         !(status instanceof HTMLParagraphElement) ||
-        !(grid instanceof HTMLDivElement)
+        !(grid instanceof HTMLDivElement) ||
+        !(uploadForm instanceof HTMLFormElement) ||
+        !(uploadInput instanceof HTMLInputElement) ||
+        !(uploadButton instanceof HTMLButtonElement)
     ) {
         return;
     }
@@ -173,6 +206,99 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
                 '画像一覧の読み込みに失敗しました。';
         }
     };
+
+    /*
+     * 新しい画像を登録
+     */
+    uploadForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const config =
+            window.NexaPressClassicEditorConfig || {};
+
+        if (!config.mediaUploadUrl) {
+            status.hidden = false;
+            status.textContent =
+                'メディア登録URLが設定されていません。';
+
+            return;
+        }
+
+        const file = uploadInput.files?.[0];
+
+        if (!(file instanceof File)) {
+            status.hidden = false;
+            status.textContent =
+                '登録する画像を選択してください。';
+
+            return;
+        }
+
+        const formData = new FormData();
+
+        formData.append('media_file', file);
+
+        uploadButton.disabled = true;
+        uploadInput.disabled = true;
+
+        status.hidden = false;
+        status.textContent = '画像を登録しています。';
+
+        try {
+            const response = await fetch(
+                config.mediaUploadUrl,
+                {
+                    method: 'POST',
+                    body: formData
+                }
+            );
+
+            const contentType =
+                response.headers.get('content-type') || '';
+
+            if (!contentType.includes('application/json')) {
+                throw new Error(
+                    'ログイン状態を確認してください。'
+                );
+            }
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message ||
+                    '画像を登録できませんでした。'
+                );
+            }
+
+            uploadForm.reset();
+
+            await loadImages();
+
+            status.hidden = false;
+            status.textContent =
+                data.message || '画像を登録しました。';
+
+            window.setTimeout(() => {
+                if (
+                    status.textContent ===
+                    '画像を登録しました。'
+                ) {
+                    status.hidden = true;
+                }
+            }, 2000);
+        } catch (error) {
+            status.hidden = false;
+
+            status.textContent =
+                error instanceof Error
+                    ? error.message
+                    : '画像の登録に失敗しました。';
+        } finally {
+            uploadButton.disabled = false;
+            uploadInput.disabled = false;
+        }
+    });
 
     /*
      * メディア選択画面を開く
