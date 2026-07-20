@@ -2,6 +2,18 @@
   "id": "classic-editor",
   "name": "クラシックエディター",
   "description": "投稿本文に文字装飾エディターを追加します。",
-  "version": "1.2.0",
-  "bootstrap": "bootstrap.php"
+  "version": "1.2.1",
+  "bootstrap": "bootstrap.php",
+  "bundled": true,
+  "icon_url": "https://raw.githubusercontent.com/aki-sho/nexapress-classic-editor/main/img.png",
+  "download_url": "https://github.com/aki-sho/nexapress-classic-editor/releases/download/v1.2.1/classic-editor-v1.2.1.zip",
+  "requires": {
+    "nexapress": "2.1.0",
+    "php": "8.0"
+  },
+  "update": {
+    "provider": "github",
+    "repository": "aki-sho/nexapress-classic-editor",
+    "asset": "classic-editor-v{version}.zip"
+  }
 }
