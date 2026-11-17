@@ -78,17 +78,23 @@ document.addEventListener('DOMContentLoaded', () => {
     /*
      * 保存済み本文をビジュアル画面へ表示
      */
-    contentArea.innerHTML = classicEditor.sanitizeHtml(
-        textarea.value
-    );
+    const renderVisual = () => {
+        const html = classicEditor.sanitizeHtml(textarea.value);
+        if (classicEditor.sanitizeHtml(contentArea.innerHTML) !== html) {
+            contentArea.innerHTML = html;
+        }
+    };
+    renderVisual();
 
     /*
      * ビジュアル編集内容をtextareaへ反映
      */
     const synchronize = () => {
-        textarea.value = classicEditor.sanitizeHtml(
-            contentArea.innerHTML
-        );
+        const html = classicEditor.sanitizeHtml(contentArea.innerHTML);
+        if (html !== classicEditor.sanitizeHtml(textarea.value)) {
+            textarea.value = html;
+            textarea.dispatchEvent(new Event('input', {bubbles: true}));
+        }
     };
 
     /*
@@ -115,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
         modeTabs,
         contentArea,
         textarea,
-        sanitizeHtml: classicEditor.sanitizeHtml,
+        renderVisual,
         synchronize
     });
 
@@ -132,10 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
     /*
      * 全画面編集を開始
      */
-    classicEditor.setupFullscreen({
-        editor,
-        toolbar
-    });
+    classicEditor.setupFullscreen(editor);
 
     /*
      * メディア画像挿入機能を開始
@@ -166,15 +169,12 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     if (textarea.form) {
         textarea.form.addEventListener('submit', () => {
-            if (editor.classList.contains('is-html-mode')) {
-                textarea.value = classicEditor.sanitizeHtml(
-                    textarea.value
-                );
-
-                return;
+            if (!editor.classList.contains('is-html-mode')) {
+                synchronize();
             }
-
-            synchronize();
+            if (!window.NexaPressClassicEditorConfig?.serverSanitizesHtml) {
+                textarea.value = classicEditor.sanitizeHtml(textarea.value);
+            }
         });
     }
 });

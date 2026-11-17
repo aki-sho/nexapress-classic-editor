@@ -4,6 +4,7 @@
 
 .classic-editor-mode-tabs {
     display: flex;
+    flex-wrap: wrap;
     gap: 4px;
     padding: 8px 8px 0;
     background: #f1f5f9;
@@ -22,6 +23,10 @@
 .classic-editor-mode-tabs button.is-active {
     color: #1d4ed8;
     background: #fff;
+}
+
+.classic-editor-mode-tabs .classic-editor-fullscreen-button {
+    margin-inline-start: auto;
 }
 
 

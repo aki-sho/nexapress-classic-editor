@@ -15,6 +15,9 @@ window.NexaPressClassicEditor.createTemplate = () => {
             <button type="button" data-editor-mode="html">
                 HTML
             </button>
+            <button type="button" class="classic-editor-fullscreen-button" data-editor-action="fullscreen" aria-pressed="false">
+                全画面
+            </button>
         </div>
 
         <div class="classic-editor-toolbar">
@@ -154,15 +157,6 @@ window.NexaPressClassicEditor.createTemplate = () => {
                 title="取り消し線"
             >
                 取り消し線
-            </button>
-
-            <!-- 全画面編集 -->
-            <button
-                type="button"
-                data-editor-action="fullscreen"
-                title="全画面編集"
-            >
-                全画面
             </button>
 
             <!-- 書式解除 -->

@@ -7,7 +7,7 @@ window.NexaPressClassicEditor.setupModes = (options) => {
         modeTabs,
         contentArea,
         textarea,
-        sanitizeHtml,
+        renderVisual,
         synchronize
     } = options;
 
@@ -31,9 +31,11 @@ window.NexaPressClassicEditor.setupModes = (options) => {
      * 編集モードを変更
      */
     const changeMode = (mode) => {
+        const useHtml = mode === 'html';
+        if (editor.classList.contains('is-html-mode') === useHtml) return;
         updateActiveTab(mode);
 
-        if (mode === 'html') {
+        if (useHtml) {
             synchronize();
 
             editor.classList.add('is-html-mode');
@@ -45,8 +47,7 @@ window.NexaPressClassicEditor.setupModes = (options) => {
         /*
          * HTMLを整理してビジュアル画面へ反映
          */
-        textarea.value = sanitizeHtml(textarea.value);
-        contentArea.innerHTML = textarea.value;
+        renderVisual();
 
         editor.classList.remove('is-html-mode');
         contentArea.focus();

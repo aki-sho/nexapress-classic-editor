@@ -22,22 +22,16 @@ window.NexaPressClassicEditor.setupLinks = (options) => {
             return;
         }
 
-        const url = window.prompt('リンク先URLを入力してください。');
-
-        if (!url) {
+        const input = window.prompt('リンク先URLを入力してください。');
+        if (!input?.trim()) {
             return;
         }
 
         /*
          * 危険なURLを拒否
          */
-        if (
-            !url.startsWith('https://') &&
-            !url.startsWith('http://') &&
-            !url.startsWith('/') &&
-            !url.startsWith('#') &&
-            !url.startsWith('mailto:')
-        ) {
+        const url = window.NexaPressClassicEditor.safeUrl(input);
+        if (url === null) {
             window.alert('使用できないURLです。');
             return;
         }

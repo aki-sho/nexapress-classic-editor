@@ -62,6 +62,7 @@ add_action('admin_footer', function (): void {
      * JavaScriptへメディア一覧URLを渡す
      */
     $config = [
+        'serverSanitizesHtml' => class_exists(\app\Core\HtmlSanitizer::class),
         'mediaUrl' => url(
             'admin/extensions/classic-editor/media'
         ),

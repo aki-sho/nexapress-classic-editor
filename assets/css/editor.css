@@ -21,6 +21,18 @@
     color: #111827;
     line-height: 1.8;
     outline: none;
+    overflow-wrap: anywhere;
+    overflow-x: auto;
+}
+
+.classic-editor-content img {
+    max-width: 100%;
+    height: auto;
+}
+
+.classic-editor-feedback {
+    margin: 8px 16px;
+    color: #b42318;
 }
 
 .classic-editor-content:focus {

@@ -98,19 +98,23 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
     /*
      * 選択した画像を本文へ挿入
      */
+    const feedback = document.createElement('p');
+    feedback.className = 'classic-editor-feedback';
+    feedback.setAttribute('role', 'status');
+    feedback.hidden = true;
+    contentArea.before(feedback);
+
     const insertImage = (image) => {
+        dialog.close();
         contentArea.focus();
-        selectionManager.restore();
+        selectionManager.restore(true);
+        const url = window.NexaPressClassicEditor.safeUrl(image.url, true);
 
         const previousImages = new Set(
             contentArea.querySelectorAll('img')
         );
 
-        document.execCommand(
-            'insertImage',
-            false,
-            image.url
-        );
+        if (url) document.execCommand('insertImage', false, url);
 
         /*
          * 今回追加された画像へ代替文字を設定
@@ -119,14 +123,16 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
             contentArea.querySelectorAll('img')
         ).find((item) => !previousImages.has(item));
 
-        if (insertedImage instanceof HTMLImageElement) {
-            insertedImage.alt = image.description || image.title;
-            insertedImage.title = image.title;
+        if (!insertedImage) {
+            feedback.textContent = '画像を挿入できませんでした。';
+            feedback.hidden = false;
+            return;
         }
 
+        insertedImage.alt = image.description || image.title;
+        insertedImage.title = image.title;
         selectionManager.save();
         synchronize();
-        dialog.close();
     };
 
     /*
@@ -304,6 +310,8 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
      * メディア選択画面を開く
      */
     openButton.addEventListener('click', () => {
+        selectionManager.save();
+        feedback.hidden = true;
         dialog.showModal();
         loadImages();
     });

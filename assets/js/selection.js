@@ -29,19 +29,22 @@ window.NexaPressClassicEditor.createSelectionManager = (
     /*
      * 保存した選択範囲を復元
      */
-    const restore = () => {
-        if (!savedRange) {
-            return;
-        }
-
+    const restore = (fallbackToEnd = false) => {
         const selection = window.getSelection();
-
         if (!selection) {
             return;
         }
 
+        let range = savedRange;
+        if (!range || !contentArea.contains(range.commonAncestorContainer)) {
+            if (!fallbackToEnd) return;
+            range = document.createRange();
+            range.selectNodeContents(contentArea);
+            range.collapse(false);
+        }
+
         selection.removeAllRanges();
-        selection.addRange(savedRange);
+        selection.addRange(range);
     };
 
     /*

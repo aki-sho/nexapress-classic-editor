@@ -71,6 +71,37 @@ window.NexaPressClassicEditor.setupHtmlTemplates = (options) => {
      * HTML入力欄の直前へ表示
      */
     textarea.before(panel);
+    const undoButton = document.createElement('button');
+    undoButton.type = 'button';
+    undoButton.textContent = 'テンプレート適用を取り消す';
+    undoButton.hidden = true;
+    panel.append(undoButton);
+
+    let lastChange = null;
+    const notifyChange = () => textarea.dispatchEvent(new Event('input', {bubbles: true}));
+    const clearUndo = () => {
+        lastChange = null;
+        undoButton.hidden = true;
+    };
+    const undoTemplate = () => {
+        if (!lastChange || textarea.value !== lastChange.applied) return false;
+        const {original, selectionStart, selectionEnd} = lastChange;
+        clearUndo();
+        textarea.value = original;
+        textarea.focus();
+        textarea.setSelectionRange(selectionStart, selectionEnd);
+        notifyChange();
+        return true;
+    };
+    undoButton.addEventListener('click', undoTemplate);
+    textarea.addEventListener('input', () => {
+        if (lastChange && textarea.value !== lastChange.applied) clearUndo();
+    });
+    textarea.addEventListener('keydown', event => {
+        if ((event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === 'z' && undoTemplate()) {
+            event.preventDefault();
+        }
+    });
 
     /*
      * 選択したテンプレートを本文へ適用
@@ -91,8 +122,9 @@ window.NexaPressClassicEditor.setupHtmlTemplates = (options) => {
         /*
          * 既存本文がある場合は置き換え確認
          */
+        const visibleContent = textarea.value.replace(/<br\s*\/?>|<\/?(?:p|div|span)\s*>|&nbsp;/gi, '').trim();
         if (
-            textarea.value.trim() !== '' &&
+            visibleContent !== '' &&
             !window.confirm(
                 '現在の本文をテンプレートに置き換えますか？'
             )
@@ -100,7 +132,15 @@ window.NexaPressClassicEditor.setupHtmlTemplates = (options) => {
             return;
         }
 
-        textarea.value = selectedTemplate.html;
+        lastChange = {
+            original: textarea.value,
+            selectionStart: textarea.selectionStart,
+            selectionEnd: textarea.selectionEnd,
+            applied: selectedTemplate.html,
+        };
+        textarea.value = lastChange.applied;
+        undoButton.hidden = false;
+        notifyChange();
         textarea.focus();
 
         /*
