@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function synchronize() {
         const area = getContentArea();
         if (!area) return;
-        const html = classic.sanitizeHtml(area.innerHTML);
+        const html = classic.sanitizeHtml(area);
         if (html !== classic.sanitizeHtml(textarea.value)) {
             textarea.value = html;
             textarea.dispatchEvent(new Event('input', {bubbles: true}));
@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderVisual() {
         const html = classic.sanitizeHtml(textarea.value);
-        if (classic.sanitizeHtml(contentArea.innerHTML) !== html) contentArea.innerHTML = html;
+        if (classic.sanitizeHtml(contentArea) !== html) contentArea.innerHTML = html;
         blocks.decorate(contentArea);
     }
 

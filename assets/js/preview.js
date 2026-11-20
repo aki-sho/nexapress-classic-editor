@@ -77,8 +77,9 @@ window.NexaPressClassicEditor.setupPreview = ({editor, modeTabs, form, textarea,
         editable(field, 'タイトル', false);
         editable(body, '本文', true);
         updateTitle();
-        body.innerHTML = sanitize(textarea.value);
-        mirrorBody(body.innerHTML);
+        const html = sanitize(textarea.value);
+        body.innerHTML = html;
+        mirrorBody(html);
 
         field.addEventListener('input', () => {
             const text = field.textContent.replace(/[\r\n]+/g, ' ');

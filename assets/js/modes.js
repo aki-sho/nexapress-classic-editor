@@ -49,6 +49,8 @@ window.NexaPressClassicEditor.setupModes = (options) => {
         }
         preview?.hide();
         if (mode === 'html') {
+            const html = window.NexaPressClassicEditor.formatHtml(textarea.value);
+            if (html !== textarea.value) textarea.value = html;
             textarea.focus();
 
             return;

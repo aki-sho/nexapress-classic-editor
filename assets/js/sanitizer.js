@@ -103,10 +103,24 @@ window.NexaPressClassicEditor = window.NexaPressClassicEditor || {};
     editor.isEmptyContinuation = element => element?.localName === 'p' && element.hasAttribute('data-nx-editor-continuation') &&
         !element.textContent.trim() && !element.querySelector('img');
 
+    function preservePreformattedBreaks(fragment) {
+        for (const element of fragment.querySelectorAll('pre')) {
+            const first = element.firstChild;
+            if (first?.nodeType === 3 && first.data.startsWith('\n')) {
+                // The HTML parser consumes the first newline immediately after <pre>.
+                first.data = '\n' + first.data;
+            }
+        }
+    }
+
     // Keep the same elements and attributes as the CMS's HTML sanitizer.
-    editor.sanitizeHtml = html => {
+    editor.sanitizeHtml = source => {
         const template = document.createElement('template');
-        template.innerHTML = html;
+        if (typeof source === 'string') {
+            template.innerHTML = source;
+        } else {
+            for (const node of source.childNodes) template.content.append(node.cloneNode(true));
+        }
         for (const element of template.content.querySelectorAll('*')) {
             if (editor.isEmptyContinuation(element)) {
                 element.remove();
@@ -135,6 +149,37 @@ window.NexaPressClassicEditor = window.NexaPressClassicEditor || {};
                 element.relList.add('noopener', 'noreferrer');
             }
         }
+        preservePreformattedBreaks(template.content);
         return template.innerHTML;
+    };
+
+    const containers = new Set(['div', 'ul', 'ol', 'li', 'blockquote', 'figure', 'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td']);
+    const blocks = new Set([...containers, 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'pre', 'hr', 'figcaption']);
+    const onlyWhitespace = /^[ \t\r\n\f]*$/;
+
+    function formatChildren(parent, depth) {
+        const children = [...parent.childNodes].filter(node => node.nodeType !== 3 || !onlyWhitespace.test(node.data));
+        // Indent block-only groups. Mixed text and inline markup can depend on every space.
+        if (!children.length || children.some(node => node.nodeType !== 1 ||
+            !(blocks.has(node.localName) || (parent.localName === 'figure' && node.localName === 'img')))) {
+            return null;
+        }
+        const indent = '  '.repeat(depth);
+        return children.map(node => {
+            const inside = containers.has(node.localName) ? formatChildren(node, depth + 1) : null;
+            if (inside === null) return indent + node.outerHTML;
+            const closing = '</' + node.localName + '>';
+            const opening = node.cloneNode(false).outerHTML.slice(0, -closing.length);
+            return indent + opening + '\n' + inside + '\n' + indent + closing;
+        }).join('\n');
+    }
+
+    editor.formatHtml = html => {
+        const template = document.createElement('template');
+        template.innerHTML = html;
+        preservePreformattedBreaks(template.content);
+        // Keep manually entered markup whose spelling the browser would normalize.
+        if (template.innerHTML !== html) return html;
+        return formatChildren(template.content, 0) ?? html;
     };
 })();
