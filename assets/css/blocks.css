@@ -6,7 +6,7 @@
 .classic-editor-blocks > :not([hidden]) {
     margin: 4px 8px;
 }
-.classic-editor-block-bar, .classic-editor-block-options, .classic-editor-block-selection, .classic-editor-heading-choice {
+.classic-editor-block-bar, .classic-editor-block-selection {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -26,7 +26,7 @@
     min-width: 28px;
     padding-inline: 4px;
 }
-.classic-editor-blocks :is(button, select), .classic-editor-preview-controls button, [data-preview-retry] {
+.classic-editor-preview-controls button, [data-preview-retry] {
     min-height: 30px;
     padding: 3px 7px;
     border: 1px solid #cbd5e1;
@@ -36,15 +36,7 @@
     font: .875rem/1.35 system-ui, sans-serif;
     margin: 0;
 }
-.classic-editor-blocks [data-block-heading] {
-    width: auto;
-}
-.classic-editor-block-bar [data-block-toggle] {
-    border-color: #b7c9ec;
-    color: #1d4ed8;
-    background: #eef4ff;
-}
-.classic-editor-blocks button:disabled, .classic-editor-block-bar button:disabled { opacity: .5; }
+.classic-editor-block-bar button:disabled { opacity: .5; }
 .classic-editor-blocks label { max-width: 430px; }
 .classic-editor-blocks [data-block-error] { color: #ad182f; }
 .classic-editor-content .nx-article-columns {
@@ -68,11 +60,6 @@
     color: #54647b;
     font: 12px/1.5 system-ui, sans-serif;
     content: attr(data-nx-column);
-    pointer-events: none;
-}
-.classic-editor-content .nx-article-column:empty::after {
-    color: #54647b;
-    content: attr(data-nx-placeholder);
     pointer-events: none;
 }
 .classic-editor-content [data-nx-block-active], .classic-editor-content [data-nx-column-active] {

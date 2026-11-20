@@ -100,11 +100,18 @@ window.NexaPressClassicEditor = window.NexaPressClassicEditor || {};
         }
     };
 
+    editor.isEmptyContinuation = element => element?.localName === 'p' && element.hasAttribute('data-nx-editor-continuation') &&
+        !element.textContent.trim() && !element.querySelector('img');
+
     // Keep the same elements and attributes as the CMS's HTML sanitizer.
     editor.sanitizeHtml = html => {
         const template = document.createElement('template');
         template.innerHTML = html;
         for (const element of template.content.querySelectorAll('*')) {
+            if (editor.isEmptyContinuation(element)) {
+                element.remove();
+                continue;
+            }
             const tag = element.localName;
             if (element.namespaceURI !== 'http://www.w3.org/1999/xhtml' || removeWithContent.has(tag)) {
                 element.remove();

@@ -5,9 +5,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!form || textarea.dataset.classicEditorInitialized || !classic?.createTemplate) return;
     textarea.dataset.classicEditorInitialized = 'true';
 
+    const enabled = Boolean(window.NexaPressClassicEditorConfig?.previewUrls?.[form.dataset.editorKind]);
     const editor = document.createElement('div');
     editor.className = 'classic-editor';
-    editor.innerHTML = classic.createTemplate();
+    editor.innerHTML = classic.createTemplate(enabled);
     textarea.before(editor);
     editor.append(textarea);
     textarea.classList.add('classic-editor-source');
@@ -31,9 +32,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (mode === 'preview') preview.mirrorBody(html);
     }
 
-    const enabled = Boolean(window.NexaPressClassicEditorConfig?.previewUrls?.[form.dataset.editorKind]);
     const blocks = classic.setupBlocks({
-        toolbar, getContentArea, selectionManager, synchronize, enabled, openMedia: () => openMedia?.(),
+        editor, toolbar, getContentArea, selectionManager, synchronize, enabled,
+        openMedia: insert => openMedia(insert),
     });
 
     function renderVisual() {

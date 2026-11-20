@@ -13,10 +13,6 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
         '[data-editor-action="open-media"]'
     );
 
-    if (!(openButton instanceof HTMLButtonElement)) {
-        return;
-    }
-
     /*
      * メディア選択画面を作成
      */
@@ -105,10 +101,12 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
     feedback.setAttribute('role', 'status');
     feedback.hidden = true;
     contentArea.before(feedback);
+    let opening = null;
 
     const insertImage = (image) => {
+        const insert = opening.insert;
         dialog.close();
-        if (!addImage(image)) {
+        if (!insert(image)) {
             feedback.textContent = '画像を挿入できませんでした。';
             feedback.hidden = false;
         }
@@ -155,7 +153,7 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
     /*
      * NexaPressから画像一覧を取得
      */
-    const loadImages = async () => {
+    const loadImages = async (request) => {
         if (!config.mediaUrl) {
             status.textContent =
                 'メディア一覧のURLが設定されていません。';
@@ -176,6 +174,7 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
             }
 
             const data = await response.json();
+            if (!dialog.open || opening !== request) return;
 
             renderImages(
                 Array.isArray(data.images)
@@ -183,6 +182,7 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
                     : []
             );
         } catch (error) {
+            if (!dialog.open || opening !== request) return;
             status.hidden = false;
             status.textContent =
                 '画像一覧の読み込みに失敗しました。';
@@ -195,6 +195,7 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
     uploadForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         if (config.canUpload === false || uploadButton.disabled) return;
+        const request = opening;
 
         if (!config.mediaUploadUrl) {
             status.hidden = false;
@@ -253,13 +254,14 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
             }
 
             uploadForm.reset();
-            if (!dialog.open) return;
+            if (!dialog.open || opening !== request) return;
             if (data.image) {
                 insertImage(data.image);
                 return;
             }
 
-            await loadImages();
+            await loadImages(request);
+            if (!dialog.open || opening !== request) return;
 
             status.hidden = false;
             status.textContent =
@@ -274,6 +276,7 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
                 }
             }, 2000);
         } catch (error) {
+            if (!dialog.open || opening !== request) return;
             status.hidden = false;
 
             status.textContent =
@@ -289,14 +292,15 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
     /*
      * メディア選択画面を開く
      */
-    const open = () => {
+    const open = (insert = addImage) => {
         if (dialog.open) return;
+        opening = {insert};
         selectionManager.save();
         feedback.hidden = true;
         dialog.showModal();
-        loadImages();
+        loadImages(opening);
     };
-    openButton.addEventListener('click', open);
+    openButton?.addEventListener('click', () => open());
 
     /*
      * メディア選択画面を閉じる

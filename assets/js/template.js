@@ -1,7 +1,7 @@
 /*
  * エディターの操作画面を作成する
  */
-window.NexaPressClassicEditor.createTemplate = () => {
+window.NexaPressClassicEditor.createTemplate = (inlineBlocks = false) => {
     return `
         <div class="classic-editor-mode-tabs">
             <button
@@ -98,6 +98,7 @@ window.NexaPressClassicEditor.createTemplate = () => {
                 <option value="justifyRight">右</option>
             </select>
 
+            ${inlineBlocks ? '' : `
             <!-- リスト -->
             <button
                 type="button"
@@ -123,6 +124,7 @@ window.NexaPressClassicEditor.createTemplate = () => {
             >
                 メディア追加
             </button>
+            `}
 
             <!-- リンク -->
             <button
@@ -141,6 +143,7 @@ window.NexaPressClassicEditor.createTemplate = () => {
                 リンク解除
             </button>
 
+            ${inlineBlocks ? '' : `
             <!-- 引用 -->
             <button
                 type="button"
@@ -150,6 +153,7 @@ window.NexaPressClassicEditor.createTemplate = () => {
             >
                 引用
             </button>
+            `}
 
             <!-- 取り消し線 -->
             <button

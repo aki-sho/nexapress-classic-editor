@@ -49,6 +49,7 @@
 .classic-editor.is-html-mode .classic-editor-blocks,
 .classic-editor-preview[hidden],
 .classic-editor-preview [hidden],
+.classic-editor-block-bar[hidden],
 .classic-editor-block-bar [hidden],
 .classic-editor-blocks [hidden],
 .classic-editor-media-dialog [hidden] {
