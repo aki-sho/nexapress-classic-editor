@@ -6,12 +6,14 @@
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
-    padding: 8px 8px 0;
+    padding: 4px 8px 0;
     background: #f1f5f9;
 }
 
 .classic-editor-mode-tabs button {
-    padding: 7px 14px;
+    padding: 5px 10px;
+    font-size: .875rem;
+    line-height: 1.4;
     color: #475569;
     background: #e2e8f0;
     border: 1px solid #cbd5e1;
@@ -46,6 +48,8 @@
 .classic-editor.is-preview-mode .classic-editor-content,
 .classic-editor.is-html-mode .classic-editor-blocks,
 .classic-editor-preview[hidden],
+.classic-editor-preview [hidden],
+.classic-editor-block-bar [hidden],
 .classic-editor-blocks [hidden],
 .classic-editor-media-dialog [hidden] {
     display: none !important;

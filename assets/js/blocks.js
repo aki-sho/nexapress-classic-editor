@@ -1,8 +1,9 @@
 window.NexaPressClassicEditor.setupBlocks = ({toolbar, getContentArea, selectionManager, synchronize, openMedia, enabled}) => {
     const classic = window.NexaPressClassicEditor;
+    const headingLevels = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
     const types = {
         paragraph: ['段落', '<p><br></p>'],
-        heading: ['見出し', '<h2><br></h2>'],
+        heading: ['見出し'],
         image: ['画像'],
         list: ['リスト', '<ul><li><br></li></ul>'],
         quote: ['引用', '<blockquote><br></blockquote>'],
@@ -11,27 +12,42 @@ window.NexaPressClassicEditor.setupBlocks = ({toolbar, getContentArea, selection
         divider: ['区切り線', '<hr>'],
         columns: ['カラム'],
     };
-    const panel = document.createElement('div');
-    panel.className = 'classic-editor-blocks';
-    panel.hidden = !enabled;
-    panel.innerHTML = '<div class="classic-editor-block-bar">' +
-        '<button type="button" data-block-toggle aria-expanded="false">＋ ブロックを追加</button>' +
-        '<span data-block-target hidden></span><button type="button" data-block-group hidden>カラム全体を選択</button>' +
+    const bar = document.createElement('div');
+    bar.className = 'classic-editor-block-bar';
+    bar.setAttribute('role', 'group');
+    bar.setAttribute('aria-label', 'ブロック操作');
+    bar.innerHTML =
+        '<button type="button" data-block-toggle aria-label="ブロックを追加" aria-expanded="false">＋ ブロック</button>' +
+        '<span data-block-target hidden></span><button type="button" data-block-group aria-label="カラム全体を選択" hidden>カラム全体</button>' +
         '<div class="classic-editor-block-selection" data-block-selection hidden><span data-block-label></span>' +
         '<button type="button" data-block-move="up" aria-label="ブロックを上へ移動">↑</button>' +
         '<button type="button" data-block-move="down" aria-label="ブロックを下へ移動">↓</button>' +
-        '<button type="button" data-block-remove>削除</button></div></div>' +
-        '<div class="classic-editor-block-options" data-block-menu hidden>' +
-        Object.entries(types).map(([name, [label]]) => '<button type="button" data-insert-block="' + name + '">' + label + '</button>').join('') +
+        '<button type="button" data-block-remove>削除</button></div>';
+    const blockChoices = Object.entries(types).map(([name, [label]]) => {
+        const button = '<button type="button" data-insert-block="' + name + '">' + label + '</button>';
+        if (name !== 'heading') return button;
+        const levels = headingLevels.map(level =>
+            '<option value="' + level + '"' + (level === 'h2' ? ' selected' : '') + '>' + level.toUpperCase() + '</option>'
+        ).join('');
+        return '<span class="classic-editor-heading-choice">' + button +
+            '<select data-block-heading aria-label="追加する見出しのレベル">' + levels + '</select></span>';
+    }).join('');
+    const panel = document.createElement('div');
+    panel.className = 'classic-editor-blocks';
+    panel.innerHTML = '<div class="classic-editor-block-options" data-block-menu hidden>' + blockChoices +
         '</div><div class="classic-editor-block-options" data-block-columns aria-label="カラムの列数" role="group" hidden>' +
         [2, 3, 4].map(count => '<button type="button" data-block-count="' + count + '">' + count + '列</button>').join('') +
         '</div><label data-block-image-options hidden>代替テキスト<input data-block-alt type="text" maxlength="255"></label>' +
         '<label data-block-link-options hidden>ボタンのリンク先<input data-block-link type="text"></label>' +
         '<p data-block-error role="alert" hidden></p>';
-    toolbar.after(panel);
-    const find = selector => panel.querySelector(selector);
+    if (enabled) {
+        toolbar.prepend(bar);
+        toolbar.after(panel);
+    }
+    const find = selector => bar.querySelector(selector) || panel.querySelector(selector);
     const menu = find('[data-block-menu]');
     const counts = find('[data-block-columns]');
+    const headingLevel = find('[data-block-heading]');
     const alt = find('[data-block-alt]');
     const link = find('[data-block-link]');
     let activeColumn = null;
@@ -58,7 +74,7 @@ window.NexaPressClassicEditor.setupBlocks = ({toolbar, getContentArea, selection
     function blockName(block) {
         if (!block) return '';
         if (block.matches('.nx-article-columns')) return 'columns';
-        if (block.matches('h1, h2, h3, h4, h5, h6')) return 'heading';
+        if (headingLevels.includes(block.localName)) return 'heading';
         if (block.querySelector('.nx-article-button')) return 'button';
         return {figure: 'image', ul: 'list', ol: 'list', blockquote: 'quote', table: 'table', hr: 'divider'}[block.localName] || 'paragraph';
     }
@@ -84,7 +100,7 @@ window.NexaPressClassicEditor.setupBlocks = ({toolbar, getContentArea, selection
         const kind = blockName(block);
         const location = find('[data-block-target]');
         location.hidden = !column;
-        location.textContent = column ? '追加先　' + column.dataset.nxColumn : '';
+        location.textContent = column?.dataset.nxColumn || '';
         find('[data-block-group]').hidden = !column;
         find('[data-block-toggle]').disabled = !getContentArea();
         find('[data-insert-block="columns"]').disabled = Boolean(column);
@@ -189,7 +205,7 @@ window.NexaPressClassicEditor.setupBlocks = ({toolbar, getContentArea, selection
         focus(group.firstElementChild);
     }
 
-    panel.addEventListener('click', event => {
+    function handleAction(event) {
         const button = event.target.closest('button');
         const area = getContentArea();
         if (!button || button.disabled || !area) return;
@@ -200,6 +216,12 @@ window.NexaPressClassicEditor.setupBlocks = ({toolbar, getContentArea, selection
             counts.hidden = !counts.hidden;
         } else if (insertBlock === 'image') {
             openMedia();
+        } else if (insertBlock === 'heading') {
+            const level = headingLevels.includes(headingLevel.value) ? headingLevel.value : 'h2';
+            const heading = area.ownerDocument.createElement(level);
+            heading.append(area.ownerDocument.createElement('br'));
+            add(heading);
+            focus(heading, true);
         } else if (insertBlock && types[insertBlock]?.[1]) {
             const template = area.ownerDocument.createElement('template');
             template.innerHTML = types[insertBlock][1];
@@ -225,7 +247,9 @@ window.NexaPressClassicEditor.setupBlocks = ({toolbar, getContentArea, selection
             select(activeBlock, activeColumn);
             synchronize();
         }
-    });
+    }
+    bar.addEventListener('click', handleAction);
+    panel.addEventListener('click', handleAction);
     alt.addEventListener('input', () => {
         const img = activeBlock?.querySelector('img');
         if (!img) return;

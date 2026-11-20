@@ -51,6 +51,7 @@ window.NexaPressClassicEditor.createTemplate = () => {
             >
                 <option value="">見出し</option>
                 <option value="p">通常文章</option>
+                <option value="h1">見出しH1</option>
                 <option value="h2">見出しH2</option>
                 <option value="h3">見出しH3</option>
                 <option value="h4">見出しH4</option>
