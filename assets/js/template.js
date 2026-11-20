@@ -12,7 +12,7 @@ window.NexaPressClassicEditor.createTemplate = () => {
                 ビジュアル
             </button>
 
-            <button type="button" data-editor-mode="html">
+            <button type="button" data-editor-mode="html" aria-pressed="false">
                 HTML
             </button>
             <button type="button" class="classic-editor-fullscreen-button" data-editor-action="fullscreen" aria-pressed="false">
@@ -47,9 +47,9 @@ window.NexaPressClassicEditor.createTemplate = () => {
             <select
                 class="classic-editor-format"
                 data-command="formatBlock"
-                title="文章形式"
+                aria-label="見出しのレベル"
             >
-                <option value="">文章形式</option>
+                <option value="">見出し</option>
                 <option value="p">通常文章</option>
                 <option value="h2">見出しH2</option>
                 <option value="h3">見出しH3</option>

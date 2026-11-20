@@ -1,10 +1,15 @@
 # NexaPress Classic Editor
 
-NexaPressの投稿編集画面に、文字装飾とビジュアル編集機能を追加する拡張機能です。
+NexaPressの固定ページと投稿の編集画面に、ビジュアル編集とHTML編集を追加する拡張機能です。
 
 ## 現在の状態
 
-この拡張機能は開発版です。
+NexaPress v2.17.0以降では、プレビューモードと本文ブロックを利用できます。
+
+- プレビューモードでは、使用中のテーマのヘッダーとフッターを表示したまま、タイトルと本文を直接編集できます。ビジュアル、HTML、プレビューの切り替え後も、フォームの編集内容を引き継ぎます。
+- 「＋ ブロックを追加」で段落・見出し・画像・リスト・引用・ボタン・表・区切り線・カラムを追加できます。各ブロックを選んで移動・削除できます。
+- カラムは2〜4列です。選んだ列で本文を書いたり、別のブロックを追加したりできます。
+- 画像ブロックの選択画面から、メディアの画像の挿入とPCからのアップロードができます。挿入後は代替テキストを編集できます。
 
 NexaPress本体側に、次の拡張機能用フックが追加された環境で動作します。
 
@@ -43,6 +48,7 @@ nexapress-classic-editor/
 │  │  ├─ editor.css
 │  │  ├─ toolbar.css
 │  │  ├─ modes.css
+│  │  ├─ blocks.css
 │  │  ├─ fullscreen.css
 │  │  └─ media.css
 │  └─ js/
@@ -50,6 +56,8 @@ nexapress-classic-editor/
 │     ├─ selection.js
 │     ├─ toolbar.js
 │     ├─ modes.js
+│     ├─ preview.js
+│     ├─ blocks.js
 │     ├─ link.js
 │     ├─ fullscreen.js
 │     ├─ media.js

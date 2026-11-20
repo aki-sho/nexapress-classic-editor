@@ -1,180 +1,82 @@
 document.addEventListener('DOMContentLoaded', () => {
-    /*
-     * 投稿本文のtextareaを取得
-     */
-    const textarea = document.querySelector(
-        '.post-form textarea#content'
-    );
-
-    if (!(textarea instanceof HTMLTextAreaElement)) {
-        return;
-    }
-
-    /*
-     * 二重初期化を防止
-     */
-    if (textarea.dataset.classicEditorInitialized === 'true') {
-        return;
-    }
-
+    const textarea = document.querySelector('.post-form textarea#content');
+    const form = textarea?.form;
+    const classic = window.NexaPressClassicEditor;
+    if (!form || textarea.dataset.classicEditorInitialized || !classic?.createTemplate) return;
     textarea.dataset.classicEditorInitialized = 'true';
 
-    const classicEditor = window.NexaPressClassicEditor;
-
-    if (
-        !classicEditor ||
-        typeof classicEditor.sanitizeHtml !== 'function' ||
-        typeof classicEditor.createSelectionManager !== 'function' ||
-        typeof classicEditor.setupToolbar !== 'function' ||
-        typeof classicEditor.setupModes !== 'function'  ||
-        typeof classicEditor.createTemplate !== 'function' ||
-        typeof classicEditor.setupLinks !== 'function' ||
-        typeof classicEditor.setupFullscreen !== 'function' ||
-        typeof classicEditor.setupMedia !== 'function'  ||
-        typeof classicEditor.setupHtmlTemplates !== 'function'
-    ) {
-        return;
-    }
-
-    /*
-     * エディター画面を作成
-     */
     const editor = document.createElement('div');
-
     editor.className = 'classic-editor';
-
-    editor.innerHTML = classicEditor.createTemplate();
-
+    editor.innerHTML = classic.createTemplate();
     textarea.before(editor);
     editor.append(textarea);
-    /*
-    * 分割したテンプレートから操作画面を作成
-    */
     textarea.classList.add('classic-editor-source');
 
-    /*
-     * 必要な画面要素を取得
-     */
-    const contentArea = editor.querySelector(
-        '.classic-editor-content'
-    );
+    const contentArea = editor.querySelector('.classic-editor-content');
+    const toolbar = editor.querySelector('.classic-editor-toolbar');
+    const modeTabs = editor.querySelector('.classic-editor-mode-tabs');
+    let mode = 'visual';
+    let preview = null;
+    const getContentArea = () => mode === 'visual' ? contentArea : mode === 'preview' ? preview?.contentArea() : null;
+    const selectionManager = classic.createSelectionManager(getContentArea);
 
-    const toolbar = editor.querySelector(
-        '.classic-editor-toolbar'
-    );
-
-    const modeTabs = editor.querySelector(
-        '.classic-editor-mode-tabs'
-    );
-
-    if (
-        !(contentArea instanceof HTMLDivElement) ||
-        !(toolbar instanceof HTMLDivElement) ||
-        !(modeTabs instanceof HTMLDivElement)
-    ) {
-        return;
-    }
-
-    /*
-     * 保存済み本文をビジュアル画面へ表示
-     */
-    const renderVisual = () => {
-        const html = classicEditor.sanitizeHtml(textarea.value);
-        if (classicEditor.sanitizeHtml(contentArea.innerHTML) !== html) {
-            contentArea.innerHTML = html;
-        }
-    };
-    renderVisual();
-
-    /*
-     * ビジュアル編集内容をtextareaへ反映
-     */
-    const synchronize = () => {
-        const html = classicEditor.sanitizeHtml(contentArea.innerHTML);
-        if (html !== classicEditor.sanitizeHtml(textarea.value)) {
+    function synchronize() {
+        const area = getContentArea();
+        if (!area) return;
+        const html = classic.sanitizeHtml(area.innerHTML);
+        if (html !== classic.sanitizeHtml(textarea.value)) {
             textarea.value = html;
             textarea.dispatchEvent(new Event('input', {bubbles: true}));
         }
-    };
+        if (mode === 'preview') preview.mirrorBody(html);
+    }
 
-    /*
-     * 選択範囲管理を開始
-     */
-    const selectionManager =
-        classicEditor.createSelectionManager(contentArea);
-
-    /*
-     * 書式ツールバーを開始
-     */
-    classicEditor.setupToolbar({
-        toolbar,
-        contentArea,
-        selectionManager,
-        synchronize
+    const enabled = Boolean(window.NexaPressClassicEditorConfig?.previewUrls?.[form.dataset.editorKind]);
+    const blocks = classic.setupBlocks({
+        toolbar, getContentArea, selectionManager, synchronize, enabled, openMedia: () => openMedia?.(),
     });
 
-    /*
-     * 編集モード切り替えを開始
-     */
-    classicEditor.setupModes({
-        editor,
-        modeTabs,
-        contentArea,
-        textarea,
-        renderVisual,
-        synchronize
+    function renderVisual() {
+        const html = classic.sanitizeHtml(textarea.value);
+        if (classic.sanitizeHtml(contentArea.innerHTML) !== html) contentArea.innerHTML = html;
+        blocks.decorate(contentArea);
+    }
+
+    preview = classic.setupPreview({
+        editor, modeTabs, form, textarea,
+        onReady: area => {
+            selectionManager.watch(area.ownerDocument);
+            blocks.attach(area);
+            area.addEventListener('input', synchronize);
+        },
+    });
+    classic.setupModes({editor, modeTabs, contentArea, textarea, renderVisual, synchronize, preview,
+        setMode: next => {
+            mode = next;
+            selectionManager.clear();
+            blocks.clear();
+        },
     });
 
-    /*
-     * リンク機能を開始
-     */
-    classicEditor.setupLinks({
-        toolbar,
-        contentArea,
-        selectionManager,
-        synchronize
-    });
-
-    /*
-     * 全画面編集を開始
-     */
-    classicEditor.setupFullscreen(editor);
-
-    /*
-     * メディア画像挿入機能を開始
-     */
-    classicEditor.setupMedia({
-        toolbar,
-        contentArea,
-        selectionManager,
-        synchronize
-    });
-
-
-     /*
-     * HTMLテンプレート機能を開始
-     */
-    classicEditor.setupHtmlTemplates({
-        editor,
-        textarea
-    });
-
-    /*
-     * 入力内容を随時textareaへ反映
-     */
+    classic.setupToolbar({toolbar, selectionManager, synchronize});
+    classic.setupLinks({toolbar, selectionManager, synchronize});
+    classic.setupFullscreen(editor);
+    const openMedia = classic.setupMedia({toolbar, contentArea, selectionManager, addImage: blocks.addImage});
+    classic.setupHtmlTemplates({editor, textarea});
+    renderVisual();
+    blocks.attach(contentArea);
     contentArea.addEventListener('input', synchronize);
 
-    /*
-     * 投稿保存前に内容を整理
-     */
-    if (textarea.form) {
-        textarea.form.addEventListener('submit', () => {
-            if (!editor.classList.contains('is-html-mode')) {
-                synchronize();
-            }
-            if (!window.NexaPressClassicEditorConfig?.serverSanitizesHtml) {
-                textarea.value = classicEditor.sanitizeHtml(textarea.value);
-            }
-        });
-    }
+    form.addEventListener('nexapress:draft-restored', () => {
+        selectionManager.clear();
+        blocks.clear();
+        if (mode === 'preview') preview.show();
+        else if (mode === 'visual') renderVisual();
+    });
+    form.addEventListener('submit', () => {
+        if (mode !== 'html') synchronize();
+        if (!window.NexaPressClassicEditorConfig?.serverSanitizesHtml) {
+            textarea.value = classic.sanitizeHtml(textarea.value);
+        }
+    });
 });

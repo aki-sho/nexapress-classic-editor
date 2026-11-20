@@ -67,6 +67,9 @@ class MediaController
     public function upload(): void
     {
         Auth::requireLogin();
+        if (class_exists(\app\Core\Csrf::class)) {
+            \app\Core\Csrf::requireValid($_POST['_csrf_token'] ?? null);
+        }
 
         if (
             empty($_FILES['media_file']) ||

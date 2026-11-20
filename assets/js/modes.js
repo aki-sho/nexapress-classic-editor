@@ -1,5 +1,5 @@
 /*
- * ビジュアル編集とHTML編集を切り替える
+ * 本文の編集画面を切り替える
  */
 window.NexaPressClassicEditor.setupModes = (options) => {
     const {
@@ -8,7 +8,9 @@ window.NexaPressClassicEditor.setupModes = (options) => {
         contentArea,
         textarea,
         renderVisual,
-        synchronize
+        synchronize,
+        setMode,
+        preview
     } = options;
 
     /*
@@ -20,25 +22,33 @@ window.NexaPressClassicEditor.setupModes = (options) => {
         );
 
         buttons.forEach((button) => {
+            const active = button.dataset.editorMode === mode;
             button.classList.toggle(
                 'is-active',
-                button.dataset.editorMode === mode
+                active
             );
+            button.setAttribute('aria-pressed', String(active));
         });
     };
 
     /*
      * 編集モードを変更
      */
+    let current = 'visual';
     const changeMode = (mode) => {
-        const useHtml = mode === 'html';
-        if (editor.classList.contains('is-html-mode') === useHtml) return;
+        if (mode === current) return;
+        if (current !== 'html') synchronize();
+        current = mode;
+        setMode(mode);
         updateActiveTab(mode);
-
-        if (useHtml) {
-            synchronize();
-
-            editor.classList.add('is-html-mode');
+        editor.classList.toggle('is-html-mode', mode === 'html');
+        editor.classList.toggle('is-preview-mode', mode === 'preview');
+        if (mode === 'preview') {
+            preview.show();
+            return;
+        }
+        preview?.hide();
+        if (mode === 'html') {
             textarea.focus();
 
             return;
@@ -49,7 +59,6 @@ window.NexaPressClassicEditor.setupModes = (options) => {
          */
         renderVisual();
 
-        editor.classList.remove('is-html-mode');
         contentArea.focus();
     };
 
@@ -71,7 +80,7 @@ window.NexaPressClassicEditor.setupModes = (options) => {
 
         const mode = button.dataset.editorMode;
 
-        if (mode === 'visual' || mode === 'html') {
+        if (mode === 'visual' || mode === 'html' || (mode === 'preview' && preview)) {
             changeMode(mode);
         }
     });

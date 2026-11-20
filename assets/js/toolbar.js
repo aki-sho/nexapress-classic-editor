@@ -4,7 +4,6 @@
 window.NexaPressClassicEditor.setupToolbar = (options) => {
     const {
         toolbar,
-        contentArea,
         selectionManager,
         synchronize
     } = options;
@@ -28,14 +27,14 @@ window.NexaPressClassicEditor.setupToolbar = (options) => {
             return;
         }
 
-        contentArea.focus();
-        selectionManager.restore();
+        const doc = selectionManager.activate();
+        if (!doc) return;
         /*
         * 引用など、値が必要な命令にも対応
         */
         const value = button.dataset.value || null;
 
-        document.execCommand(command, false, value);
+        doc.execCommand(command, false, value);
 
         selectionManager.save();
         synchronize();
@@ -78,10 +77,9 @@ window.NexaPressClassicEditor.setupToolbar = (options) => {
             return;
         }
 
-        contentArea.focus();
-        selectionManager.restore();
-
-        document.execCommand(command, false, value);
+        const doc = selectionManager.activate();
+        if (!doc) return;
+        doc.execCommand(command, false, value);
 
         selectionManager.save();
         synchronize();

@@ -38,6 +38,7 @@ add_action('admin_head', function (): void {
         __DIR__ . '/assets/css/editor.css',
         __DIR__ . '/assets/css/toolbar.css',
         __DIR__ . '/assets/css/modes.css',
+        __DIR__ . '/assets/css/blocks.css',
         __DIR__ . '/assets/css/fullscreen.css',
         __DIR__ . '/assets/css/media.css',
         __DIR__ . '/assets/css/html-templates.css',
@@ -61,15 +62,20 @@ add_action('admin_footer', function (): void {
     /*
      * JavaScriptへメディア一覧URLを渡す
      */
+    $supportsPreview = class_exists(\app\Core\EditorPreview::class);
     $config = [
         'serverSanitizesHtml' => class_exists(\app\Core\HtmlSanitizer::class),
+        'previewUrls' => $supportsPreview ? [
+            'page' => url('admin/pages/editor-preview'),
+            'post' => url('admin/posts/editor-preview'),
+        ] : null,
+        'csrfToken' => class_exists(\app\Core\Csrf::class) ? \app\Core\Csrf::token() : '',
+        'canUpload' => !$supportsPreview || \app\Core\Permission::can('media.manage'),
         'mediaUrl' => url(
             'admin/extensions/classic-editor/media'
         ),
 
-        'mediaUploadUrl' => url(
-            'admin/extensions/classic-editor/media/upload'
-        ),
+        'mediaUploadUrl' => url($supportsPreview ? 'admin/media/upload-image' : 'admin/extensions/classic-editor/media/upload'),
     ];
 
     echo '<script>';
@@ -94,6 +100,8 @@ add_action('admin_footer', function (): void {
         __DIR__ . '/assets/js/selection.js',
         __DIR__ . '/assets/js/toolbar.js',
         __DIR__ . '/assets/js/modes.js',
+        __DIR__ . '/assets/js/preview.js',
+        __DIR__ . '/assets/js/blocks.js',
         __DIR__ . '/assets/js/link.js',
         __DIR__ . '/assets/js/fullscreen.js',
         __DIR__ . '/assets/js/media.js',

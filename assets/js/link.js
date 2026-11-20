@@ -4,7 +4,6 @@
 window.NexaPressClassicEditor.setupLinks = (options) => {
     const {
         toolbar,
-        contentArea,
         selectionManager,
         synchronize
     } = options;
@@ -36,10 +35,9 @@ window.NexaPressClassicEditor.setupLinks = (options) => {
             return;
         }
 
-        contentArea.focus();
-        selectionManager.restore();
-
-        document.execCommand('createLink', false, url);
+        const doc = selectionManager.activate();
+        if (!doc) return;
+        doc.execCommand('createLink', false, url);
 
         selectionManager.save();
         synchronize();

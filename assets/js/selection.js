@@ -1,59 +1,49 @@
-/*
- * 選択範囲の保存と復元を管理する
- */
-window.NexaPressClassicEditor.createSelectionManager = (
-    contentArea
-) => {
-    /** @type {Range|null} */
+window.NexaPressClassicEditor.createSelectionManager = getContentArea => {
     let savedRange = null;
-
-    /*
-     * 現在の選択範囲を保存
-     */
-    const save = () => {
-        const selection = window.getSelection();
-
-        if (!selection || selection.rangeCount === 0) {
-            return;
-        }
-
+    const watched = new WeakSet();
+    function save() {
+        const area = getContentArea();
+        const selection = area?.ownerDocument.getSelection();
+        if (!selection?.rangeCount) return;
         const range = selection.getRangeAt(0);
+        if (area.contains(range.commonAncestorContainer)) savedRange = range.cloneRange();
+    }
 
-        if (!contentArea.contains(range.commonAncestorContainer)) {
-            return;
+    function range() {
+        return savedRange && getContentArea()?.contains(savedRange.commonAncestorContainer) ? savedRange : null;
+    }
+
+    function activate(fallbackToEnd = false) {
+        const area = getContentArea();
+        if (!area) return null;
+        const doc = area.ownerDocument;
+        let position = range();
+        const start = position?.startContainer;
+        const node = start?.nodeType === 1 ? start : start?.parentElement;
+        const column = node?.closest('.nx-article-column');
+        (area.contains(column) ? column : area).focus({preventScroll: true});
+        if (!position && fallbackToEnd) {
+            position = doc.createRange();
+            position.selectNodeContents(area);
+            position.collapse(false);
         }
-
-        savedRange = range.cloneRange();
-    };
-
-    /*
-     * 保存した選択範囲を復元
-     */
-    const restore = (fallbackToEnd = false) => {
-        const selection = window.getSelection();
-        if (!selection) {
-            return;
+        if (position) {
+            const selection = doc.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(position);
         }
+        return doc;
+    }
 
-        let range = savedRange;
-        if (!range || !contentArea.contains(range.commonAncestorContainer)) {
-            if (!fallbackToEnd) return;
-            range = document.createRange();
-            range.selectNodeContents(contentArea);
-            range.collapse(false);
-        }
+    function watch(doc) {
+        if (watched.has(doc)) return;
+        watched.add(doc);
+        doc.addEventListener('selectionchange', () => {
+            const area = getContentArea();
+            if (area?.ownerDocument === doc && area.contains(doc.activeElement)) save();
+        });
+    }
 
-        selection.removeAllRanges();
-        selection.addRange(range);
-    };
-
-    /*
-     * 文字選択の変更を監視
-     */
-    document.addEventListener('selectionchange', save);
-
-    return {
-        save,
-        restore
-    };
+    watch(document);
+    return {save, range, activate, watch, clear: () => { savedRange = null; }};
 };

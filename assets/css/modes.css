@@ -42,3 +42,28 @@
 .classic-editor.is-html-mode .classic-editor-source {
     display: block;
 }
+
+.classic-editor.is-preview-mode .classic-editor-content,
+.classic-editor.is-html-mode .classic-editor-blocks,
+.classic-editor-preview[hidden],
+.classic-editor-blocks [hidden],
+.classic-editor-media-dialog [hidden] {
+    display: none !important;
+}
+
+.classic-editor-preview { background: #e7edf6; }
+.classic-editor-preview-controls { display: flex; gap: 6px; padding: 8px; background: #f1f5f9; }
+.classic-editor-preview-controls button[aria-pressed="true"] { color: #1d4ed8; background: #e2edff; }
+.classic-editor-preview [data-preview-status] { padding: 8px 12px; margin: 0; }
+.classic-editor-preview [data-preview-retry] { margin: 0 12px 8px; }
+.classic-editor-frame { padding: 8px; }
+.classic-editor-frame iframe {
+    display: block;
+    width: 100%;
+    height: clamp(360px, 65vh, 740px);
+    margin-inline: auto;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    background: #fff;
+}
+.classic-editor-frame.is-mobile iframe { max-width: 390px; }
