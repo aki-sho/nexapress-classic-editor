@@ -1,6 +1,7 @@
 window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, selectionManager, synchronize, openMedia, enabled}) => {
     const classic = window.NexaPressClassicEditor;
     const headingLevels = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+    const selectableObjects = enabled ? 'img, figure.nx-article-image, hr' : 'figure.nx-article-image, hr';
     const groups = [
         {label: '文章', blocks: [
             {id: 'paragraph', label: '段落', glyph: '¶', terms: 'テキスト 本文', html: '<p><br></p>'},
@@ -33,7 +34,7 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         '<div class="classic-editor-block-selection" data-block-selection hidden><span data-block-label></span>' +
         '<button type="button" data-block-move="up" aria-label="ブロックを上へ移動">↑</button>' +
         '<button type="button" data-block-move="down" aria-label="ブロックを下へ移動">↓</button>' +
-        '<button type="button" data-block-remove>削除</button></div>';
+        '<button type="button" data-block-remove>ブロックを削除</button></div>';
     const panel = document.createElement('div');
     panel.className = 'classic-editor-blocks';
     panel.innerHTML =
@@ -46,6 +47,7 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
     const attached = new WeakSet();
     let activeColumn = null;
     let activeBlock = null;
+    let objectSelected = false;
 
     if (enabled) {
         toolbar.prepend(bar);
@@ -87,11 +89,14 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
 
     function blockType(block) {
         if (!block) return '';
+        if (block.nodeType === Node.TEXT_NODE) return 'paragraph';
         if (block.matches('.nx-article-columns')) return 'columns';
         if (headingLevels.includes(block.localName)) return block.localName;
         if (block.querySelector('.nx-article-button')) return 'button';
-        return {figure: 'image', ul: 'list', ol: 'numbered-list', blockquote: 'quote', table: 'table', hr: 'divider'}[block.localName] || 'paragraph';
+        return {figure: 'image', img: 'image', ul: 'list', ol: 'numbered-list', blockquote: 'quote', table: 'table', hr: 'divider'}[block.localName] || 'paragraph';
     }
+
+    const blockImage = block => block?.localName === 'img' ? block : block?.querySelector?.('img');
 
     function error(message = '') {
         const status = find('[data-block-error]');
@@ -99,10 +104,11 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         status.hidden = !message;
     }
 
-    function select(block, column = null) {
+    function select(block, column = null, fromObject = false) {
         if (classic.isEmptyContinuation(block)) block = null;
+        objectSelected = fromObject;
         if (activeBlock !== block) {
-            activeBlock?.removeAttribute('data-nx-block-active');
+            activeBlock?.removeAttribute?.('data-nx-block-active');
             activeBlock = block;
             error();
         }
@@ -111,7 +117,7 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
             activeColumn = column;
             activeColumn?.setAttribute('data-nx-column-active', '');
         }
-        activeBlock?.setAttribute('data-nx-block-active', '');
+        activeBlock?.setAttribute?.('data-nx-block-active', '');
         const kind = blockType(block);
         const location = find('[data-block-target]');
         location.hidden = !column;
@@ -119,10 +125,11 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         find('[data-block-group]').hidden = !column;
         bar.hidden = !column && !block;
         find('[data-block-selection]').hidden = !block;
-        find('[data-block-label]').textContent = kind === 'columns' ? 'カラム' : labels.get(kind) || '';
-        find('[data-block-move="up"]').disabled = !block?.previousElementSibling;
-        find('[data-block-move="down"]').disabled = !block?.nextElementSibling || classic.isEmptyContinuation(block.nextElementSibling);
-        const image = kind === 'image' ? block.querySelector('img') : null;
+        find('[data-block-label]').textContent = kind === 'columns' ? 'カラム全体' : labels.get(kind) || '';
+        const canMove = block?.nodeType === Node.ELEMENT_NODE && block.parentElement === (column || getContentArea());
+        find('[data-block-move="up"]').disabled = !canMove || !block.previousElementSibling;
+        find('[data-block-move="down"]').disabled = !canMove || !block.nextElementSibling || classic.isEmptyContinuation(block.nextElementSibling);
+        const image = kind === 'image' ? blockImage(block) : null;
         find('[data-block-image-options]').hidden = !image;
         if (image) alt.value = image.alt;
         const button = kind === 'button' ? block.querySelector('a.nx-article-button') : null;
@@ -130,13 +137,23 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         if (button) link.value = button.getAttribute('href') || '';
     }
 
+    function scopeFor(area, node) {
+        const element = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+        const column = element?.closest('.nx-article-column[data-nx-column]');
+        return area.contains(column) ? column : area;
+    }
+
     function selectAt(area, node) {
-        let element = node?.nodeType === 1 ? node : node?.parentElement;
-        if (!area.contains(element)) return;
-        const column = element.closest('.nx-article-column[data-nx-column]');
-        const scope = area.contains(column) ? column : area;
+        if (!area.contains(node)) return;
+        const scope = scopeFor(area, node);
+        const column = scope === area ? null : scope;
+        if (enabled && node.nodeType === Node.TEXT_NODE && node.parentNode === scope) {
+            select(node.data.trim() ? node : null, column);
+            return;
+        }
+        let element = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
         while (element !== scope && element.parentElement !== scope) element = element.parentElement;
-        select(element === scope ? null : element, scope === column ? column : null);
+        select(element === scope ? null : element, column);
     }
 
     function attach(area) {
@@ -145,18 +162,38 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         if (attached.has(area)) return;
         attached.add(area);
         picker?.attach(area);
-        area.addEventListener('mousedown', event => {
-            if (event.target.closest?.('figure.nx-article-image, hr')) event.preventDefault();
-        });
-        area.addEventListener('click', event => selectAt(area, event.target));
         const doc = area.ownerDocument;
+        area.addEventListener('mousedown', event => {
+            if (event.target.closest?.(selectableObjects)) event.preventDefault();
+            else objectSelected = false;
+        });
+        area.addEventListener('click', event => {
+            const object = event.target.closest?.(selectableObjects);
+            const selection = doc.getSelection();
+            if (enabled && object && area.contains(object)) {
+                event.preventDefault();
+                const figure = object.closest('figure');
+                const block = area.contains(figure) ? figure : object;
+                const scope = scopeFor(area, block);
+                selection?.removeAllRanges();
+                selectionManager.clear();
+                select(block, scope === area ? null : scope, true);
+                return;
+            }
+            const anchor = selection?.anchorNode;
+            selectAt(area, anchor?.nodeType === Node.TEXT_NODE && anchor.parentNode === event.target ? anchor : event.target);
+        });
         const updateSelection = () => {
-            if (getContentArea() === area && area.contains(doc.activeElement)) {
+            if (!objectSelected && getContentArea() === area && doc.hasFocus() && area.contains(doc.activeElement)) {
                 selectAt(area, doc.getSelection()?.anchorNode);
             }
         };
         doc.addEventListener('selectionchange', updateSelection);
-        area.addEventListener('input', updateSelection);
+        area.addEventListener('keydown', () => { objectSelected = false; });
+        area.addEventListener('input', () => {
+            objectSelected = false;
+            updateSelection();
+        });
     }
 
     function focus(node, selectText = false) {
@@ -238,13 +275,46 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         }
     }
 
+    function removeBlock(area, block) {
+        const scope = scopeFor(area, block);
+        const doc = area.ownerDocument;
+        const caret = doc.createRange();
+        caret.setStartBefore(block);
+        caret.collapse(true);
+        const parent = block.parentElement;
+        block.remove();
+        if (block.localName === 'img' && !parent.hasChildNodes() &&
+            (parent.matches('a[href]') || (parent.matches('p') && !parent.hasAttributes()))) {
+            caret.setStartBefore(parent);
+            caret.collapse(true);
+            parent.remove();
+        }
+        ensureEditingLine(scope);
+        const continuation = caret.startContainer === scope ? scope.childNodes[caret.startOffset] : null;
+        if (classic.isEmptyContinuation(continuation)) caret.setStart(continuation, 0);
+        scope.focus({preventScroll: true});
+        const selection = doc.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(caret);
+        selectionManager.clear();
+        selectionManager.save();
+        select(null, scope === area ? null : scope);
+        synchronize();
+    }
+
+    bar.addEventListener('mousedown', event => {
+        if (event.button === 0 && event.target.closest('button')) event.preventDefault();
+    });
     bar.addEventListener('click', event => {
         const button = event.target.closest('button');
         const area = getContentArea();
         if (!button || button.disabled || !area) return;
         if (button.hasAttribute('data-block-group') && activeColumn) {
+            const group = activeColumn.parentElement;
+            const scope = scopeFor(area, group);
+            area.ownerDocument.getSelection()?.removeAllRanges();
             selectionManager.clear();
-            select(activeColumn.parentElement);
+            select(group, scope === area ? null : scope);
             find('[data-block-selection] button:not(:disabled)')?.focus();
             return;
         }
@@ -254,24 +324,20 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         if (blockMove === 'up') block.previousElementSibling?.before(block);
         else if (blockMove === 'down') block.nextElementSibling?.after(block);
         else if (button.hasAttribute('data-block-remove')) {
-            const scope = activeColumn || area;
-            const next = block.nextElementSibling || block.previousElementSibling;
-            block.remove();
-            ensureEditingLine(scope);
-            select(next, activeColumn);
-            scope.focus({preventScroll: true});
+            removeBlock(area, block);
+            return;
         }
-        select(activeBlock, activeColumn);
+        select(activeBlock, activeColumn, objectSelected);
         synchronize();
     });
     alt.addEventListener('input', () => {
-        const img = activeBlock?.querySelector('img');
+        const img = blockImage(activeBlock);
         if (!img) return;
         img.alt = alt.value;
         synchronize();
     });
     link.addEventListener('change', () => {
-        const anchor = activeBlock?.querySelector('a.nx-article-button');
+        const anchor = activeBlock?.querySelector?.('a.nx-article-button');
         if (!anchor) return;
         const url = classic.safeUrl(link.value);
         if (!url) {
