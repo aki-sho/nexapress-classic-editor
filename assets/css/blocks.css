@@ -17,10 +17,15 @@
     padding-inline-end: 6px;
     border-inline-end: 1px solid #cbd5e1;
 }
-.classic-editor-block-bar [data-block-label], .classic-editor-block-bar [data-block-target] {
+.classic-editor-block-bar [data-block-target] {
     padding-inline: 2px;
     color: #475569;
     font-size: .8125rem;
+}
+.classic-editor-block-bar button[data-block-select][aria-pressed="true"] {
+    border-color: #6689c7;
+    color: #174aa8;
+    background: #e0ecff;
 }
 .classic-editor-block-bar button[data-block-move] {
     min-width: 28px;

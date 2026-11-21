@@ -31,7 +31,8 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
     bar.hidden = true;
     bar.innerHTML =
         '<span data-block-target hidden></span><button type="button" data-block-group aria-label="カラム全体を選択" hidden>カラム全体</button>' +
-        '<div class="classic-editor-block-selection" data-block-selection hidden><span data-block-label></span>' +
+        '<div class="classic-editor-block-selection" data-block-selection hidden>' +
+        '<button type="button" data-block-select aria-pressed="false"><span data-block-label></span>を選択</button>' +
         '<button type="button" data-block-move="up" aria-label="ブロックを上へ移動">↑</button>' +
         '<button type="button" data-block-move="down" aria-label="ブロックを下へ移動">↓</button>' +
         '<button type="button" data-block-remove>ブロックを削除</button></div>';
@@ -42,12 +43,14 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         '<label data-block-link-options hidden>ボタンのリンク先<input data-block-link type="text"></label>' +
         '<p data-block-error role="alert" hidden></p>';
     const find = selector => bar.querySelector(selector) || panel.querySelector(selector);
+    const blockSelect = find('[data-block-select]');
     const alt = find('[data-block-alt]');
     const link = find('[data-block-link]');
     const attached = new WeakSet();
     let activeColumn = null;
     let activeBlock = null;
-    let objectSelected = false;
+    let wholeBlockSelected = false;
+    let removalKey = null;
 
     if (enabled) {
         toolbar.prepend(bar);
@@ -104,9 +107,12 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         status.hidden = !message;
     }
 
-    function select(block, column = null, fromObject = false) {
+    function select(block, column = null, whole = false) {
         if (classic.isEmptyContinuation(block)) block = null;
-        objectSelected = fromObject;
+        wholeBlockSelected = Boolean(block && whole);
+        blockSelect.setAttribute('aria-pressed', String(wholeBlockSelected));
+        if (wholeBlockSelected) blockSelect.setAttribute('aria-keyshortcuts', 'Delete Backspace');
+        else blockSelect.removeAttribute('aria-keyshortcuts');
         if (activeBlock !== block) {
             activeBlock?.removeAttribute?.('data-nx-block-active');
             activeBlock = block;
@@ -156,6 +162,17 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         select(element === scope ? null : element, column);
     }
 
+    function selectWholeBlock(area, block) {
+        const scope = scopeFor(area, block);
+        select(block, scope === area ? null : scope, true);
+        area.ownerDocument.getSelection()?.removeAllRanges();
+        selectionManager.clear();
+        blockSelect.focus({preventScroll: true});
+    }
+
+    const clickedObject = target => target.closest?.(selectableObjects) ??
+        (enabled && target.matches?.('.nx-article-columns') ? target : null);
+
     function attach(area) {
         decorate(area);
         select(null);
@@ -164,34 +181,40 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         picker?.attach(area);
         const doc = area.ownerDocument;
         area.addEventListener('mousedown', event => {
-            if (event.target.closest?.(selectableObjects)) event.preventDefault();
-            else objectSelected = false;
+            if (clickedObject(event.target)) event.preventDefault();
+            else wholeBlockSelected = false;
         });
         area.addEventListener('click', event => {
-            const object = event.target.closest?.(selectableObjects);
+            const object = clickedObject(event.target);
             const selection = doc.getSelection();
             if (enabled && object && area.contains(object)) {
                 event.preventDefault();
                 const figure = object.closest('figure');
-                const block = area.contains(figure) ? figure : object;
-                const scope = scopeFor(area, block);
-                selection?.removeAllRanges();
-                selectionManager.clear();
-                select(block, scope === area ? null : scope, true);
+                selectWholeBlock(area, area.contains(figure) ? figure : object);
                 return;
             }
             const anchor = selection?.anchorNode;
             selectAt(area, anchor?.nodeType === Node.TEXT_NODE && anchor.parentNode === event.target ? anchor : event.target);
         });
         const updateSelection = () => {
-            if (!objectSelected && getContentArea() === area && doc.hasFocus() && area.contains(doc.activeElement)) {
+            if (!wholeBlockSelected && getContentArea() === area && doc.hasFocus() && area.contains(doc.activeElement)) {
                 selectAt(area, doc.getSelection()?.anchorNode);
             }
         };
         doc.addEventListener('selectionchange', updateSelection);
-        area.addEventListener('keydown', () => { objectSelected = false; });
+        area.addEventListener('keydown', event => {
+            if (event.repeat && event.key === removalKey) {
+                event.preventDefault();
+                return;
+            }
+            removalKey = null;
+            wholeBlockSelected = false;
+        });
+        area.addEventListener('keyup', event => {
+            if (event.key === removalKey) removalKey = null;
+        });
         area.addEventListener('input', () => {
-            objectSelected = false;
+            wholeBlockSelected = false;
             updateSelection();
         });
     }
@@ -302,6 +325,18 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         synchronize();
     }
 
+    blockSelect.addEventListener('keydown', event => {
+        if (!wholeBlockSelected || !['Delete', 'Backspace'].includes(event.key) || event.defaultPrevented ||
+            event.isComposing || event.keyCode === 229 || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+        const area = getContentArea();
+        const block = activeBlock;
+        if (!block || !area?.contains(block)) return;
+        event.preventDefault();
+        if (event.repeat) return;
+        removalKey = event.key;
+        removeBlock(area, block);
+    });
+
     bar.addEventListener('mousedown', event => {
         if (event.button === 0 && event.target.closest('button')) event.preventDefault();
     });
@@ -310,16 +345,16 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         const area = getContentArea();
         if (!button || button.disabled || !area) return;
         if (button.hasAttribute('data-block-group') && activeColumn) {
-            const group = activeColumn.parentElement;
-            const scope = scopeFor(area, group);
-            area.ownerDocument.getSelection()?.removeAllRanges();
-            selectionManager.clear();
-            select(group, scope === area ? null : scope);
-            find('[data-block-selection] button:not(:disabled)')?.focus();
+            selectWholeBlock(area, activeColumn.parentElement);
             return;
         }
         const block = activeBlock;
         if (!area.contains(block)) return;
+        if (button === blockSelect) {
+            if (wholeBlockSelected) select(block, activeColumn);
+            else selectWholeBlock(area, block);
+            return;
+        }
         const {blockMove} = button.dataset;
         if (blockMove === 'up') block.previousElementSibling?.before(block);
         else if (blockMove === 'down') block.nextElementSibling?.after(block);
@@ -327,7 +362,7 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
             removeBlock(area, block);
             return;
         }
-        select(activeBlock, activeColumn, objectSelected);
+        select(activeBlock, activeColumn, wholeBlockSelected);
         synchronize();
     });
     alt.addEventListener('input', () => {
