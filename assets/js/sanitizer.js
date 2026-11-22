@@ -160,8 +160,10 @@ window.NexaPressClassicEditor = window.NexaPressClassicEditor || {};
     function formatChildren(parent, depth) {
         const children = [...parent.childNodes].filter(node => node.nodeType !== 3 || !onlyWhitespace.test(node.data));
         // Indent block-only groups. Mixed text and inline markup can depend on every space.
+        const imageBlock = node => node.localName === 'img' && (parent.localName === 'figure' ||
+            (parent.classList?.contains('nx-article-cover') && node.classList.contains('nx-article-cover-background')));
         if (!children.length || children.some(node => node.nodeType !== 1 ||
-            !(blocks.has(node.localName) || (parent.localName === 'figure' && node.localName === 'img')))) {
+            !(blocks.has(node.localName) || imageBlock(node)))) {
             return null;
         }
         const indent = '  '.repeat(depth);

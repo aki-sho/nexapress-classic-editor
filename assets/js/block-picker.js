@@ -60,8 +60,7 @@ window.NexaPressClassicEditor.setupBlockPicker = ({editor, getContentArea, group
         const range = selection.getRangeAt(0).cloneRange();
         const anchor = selection.anchorNode;
         const element = anchor.nodeType === 1 ? anchor : anchor.parentElement;
-        const column = element.closest('.nx-article-column[data-nx-column]');
-        const scope = area.contains(column) ? column : area;
+        const scope = window.NexaPressClassicEditor.blockScope(area, anchor);
         let line = element;
         while (line !== scope && line.parentElement !== scope) line = line.parentElement;
         if ((line === scope || line.matches(blankTags)) &&
@@ -91,7 +90,8 @@ window.NexaPressClassicEditor.setupBlockPicker = ({editor, getContentArea, group
         for (const {section, choices} of sections) {
             let visible = false;
             for (const {button, block, terms} of choices) {
-                const available = !block.columns || current.scope === current.area;
+                const available = (!block.columns || !current.scope.matches('.nx-article-column')) &&
+                    (block.id !== 'cover' || current.scope === current.area);
                 button.hidden = !available || !query.every(word => terms.includes(word));
                 visible ||= !button.hidden;
                 total += Number(!button.hidden);

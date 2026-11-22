@@ -1,3 +1,9 @@
+window.NexaPressClassicEditor.blockScope = (area, node) => {
+    const element = node?.nodeType === Node.ELEMENT_NODE ? node : node?.parentElement;
+    const scope = element?.closest('.nx-article-column[data-nx-column], .nx-article-cover-content[data-nx-cover-content]');
+    return area.contains(scope) ? scope : area;
+};
+
 window.NexaPressClassicEditor.createSelectionManager = getContentArea => {
     let savedRange = null;
     const watched = new WeakSet();
@@ -18,10 +24,7 @@ window.NexaPressClassicEditor.createSelectionManager = getContentArea => {
         if (!area) return null;
         const doc = area.ownerDocument;
         let position = range();
-        const start = position?.startContainer;
-        const node = start?.nodeType === 1 ? start : start?.parentElement;
-        const column = node?.closest('.nx-article-column');
-        (area.contains(column) ? column : area).focus({preventScroll: true});
+        window.NexaPressClassicEditor.blockScope(area, position?.startContainer).focus({preventScroll: true});
         if (!position && fallbackToEnd) {
             position = doc.createRange();
             position.selectNodeContents(area);

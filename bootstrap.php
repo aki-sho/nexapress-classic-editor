@@ -34,6 +34,9 @@ if (
  * 管理画面で使用するCSSを読み込む
  */
 add_action('admin_head', function (): void {
+    if (is_file(BASE_PATH . '/public/assets/css/article-cover.css')) {
+        echo '<link rel="stylesheet" href="' . e(nx_asset_url('assets/css/article-cover.css')) . '">';
+    }
     $cssFiles = [
         __DIR__ . '/assets/css/editor.css',
         __DIR__ . '/assets/css/toolbar.css',
@@ -66,6 +69,7 @@ add_action('admin_footer', function (): void {
     $supportsPreview = class_exists(\app\Core\EditorPreview::class);
     $config = [
         'serverSanitizesHtml' => class_exists(\app\Core\HtmlSanitizer::class),
+        'coverEnabled' => $supportsPreview && is_file(BASE_PATH . '/public/assets/css/article-cover.css'),
         'previewUrls' => $supportsPreview ? [
             'page' => url('admin/pages/editor-preview'),
             'post' => url('admin/posts/editor-preview'),
@@ -103,6 +107,7 @@ add_action('admin_footer', function (): void {
         __DIR__ . '/assets/js/modes.js',
         __DIR__ . '/assets/js/preview.js',
         __DIR__ . '/assets/js/block-picker.js',
+        __DIR__ . '/assets/js/cover.js',
         __DIR__ . '/assets/js/blocks.js',
         __DIR__ . '/assets/js/link.js',
         __DIR__ . '/assets/js/fullscreen.js',
