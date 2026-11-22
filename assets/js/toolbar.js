@@ -9,6 +9,47 @@ window.NexaPressClassicEditor.setupToolbar = (options) => {
         history
     } = options;
 
+    function format(command, value) {
+        const doc = selectionManager.activate();
+        if (!doc) return;
+        doc.execCommand(command, false, value);
+        selectionManager.save();
+        synchronize();
+    }
+
+    const color = toolbar.querySelector('input[type="color"][data-command="foreColor"]');
+    if (color) {
+        let appliedColor = null;
+
+        function prepareColor() {
+            const start = selectionManager.range()?.startContainer;
+            const element = start?.nodeType === Node.ELEMENT_NODE ? start : start?.parentElement;
+            const channels = element?.ownerDocument.defaultView.getComputedStyle(element).color
+                .match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+            if (channels) {
+                // Use the selected text's color so a previously used color can be chosen again.
+                color.value = '#' + channels.slice(1).map(channel => Number(channel).toString(16).padStart(2, '0')).join('');
+            }
+            appliedColor = null;
+        }
+
+        toolbar.addEventListener('pointerdown', event => {
+            if (event.target.closest('.classic-editor-color')) {
+                selectionManager.save();
+                prepareColor();
+            }
+        });
+        color.addEventListener('focus', prepareColor);
+        color.addEventListener('input', () => {
+            appliedColor = color.value;
+            format('foreColor', color.value);
+        });
+        color.addEventListener('change', () => {
+            if (color.value !== appliedColor) format('foreColor', color.value);
+            appliedColor = null;
+        });
+    }
+
     toolbar.addEventListener('click', (event) => {
         if (!(event.target instanceof Element)) {
             return;
@@ -32,39 +73,22 @@ window.NexaPressClassicEditor.setupToolbar = (options) => {
             return;
         }
 
-        const doc = selectionManager.activate();
-        if (!doc) return;
-        /*
-        * 引用など、値が必要な命令にも対応
-        */
-        const value = button.dataset.value || null;
-
-        doc.execCommand(command, false, value);
-
-        selectionManager.save();
-        synchronize();
+        format(command, button.dataset.value || null);
     });
 
 
     /*
-     * プルダウンと文字色を設定
+     * プルダウンを設定
      */
     toolbar.addEventListener('change', (event) => {
         const control = event.target;
 
-        if (
-            !(control instanceof HTMLSelectElement) &&
-            !(control instanceof HTMLInputElement)
-        ) {
-            return;
-        }
+        if (!(control instanceof HTMLSelectElement)) return;
 
         /*
          * 配置プルダウンは選択値をコマンドとして使用
          */
-        const isCommandSelect =
-            control instanceof HTMLSelectElement &&
-            control.hasAttribute('data-command-select');
+        const isCommandSelect = control.hasAttribute('data-command-select');
 
         const command = isCommandSelect
             ? control.value
@@ -82,18 +106,7 @@ window.NexaPressClassicEditor.setupToolbar = (options) => {
             return;
         }
 
-        const doc = selectionManager.activate();
-        if (!doc) return;
-        doc.execCommand(command, false, value);
-
-        selectionManager.save();
-        synchronize();
-
-        /*
-         * プルダウンを初期表示へ戻す
-         */
-        if (control instanceof HTMLSelectElement) {
-            control.value = '';
-        }
+        format(command, value);
+        control.value = '';
     });
 };

@@ -57,10 +57,14 @@ window.NexaPressClassicEditor.createSelectionManager = getContentArea => {
     function watch(doc) {
         if (watched.has(doc)) return;
         watched.add(doc);
-        doc.addEventListener('selectionchange', () => {
+        const saveWhileEditing = () => {
             const area = getContentArea();
             if (area?.ownerDocument === doc && area.contains(doc.activeElement)) save();
-        });
+        };
+        doc.addEventListener('selectionchange', saveWhileEditing);
+        // A toolbar control can take focus before the final selectionchange is dispatched.
+        doc.addEventListener('pointerup', saveWhileEditing);
+        doc.addEventListener('keyup', saveWhileEditing);
     }
 
     function bookmark() {
