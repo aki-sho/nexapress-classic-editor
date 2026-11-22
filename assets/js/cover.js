@@ -20,7 +20,7 @@ window.NexaPressClassicEditor.setupCover = ({editor, panel, openMedia, getConten
     };
     const marginFields = Number.isInteger(marginMaxPixels) ? [['top', '上'], ['bottom', '下']].map(([side, label]) =>
         '<label>外側の余白（' + label + '・px）<input type="number" data-cover-margin="' + side + '"' +
-        ' min="0" max="' + marginMaxPixels + '" step="1" placeholder="既定" disabled></label>'
+        ' min="0" max="' + marginMaxPixels + '" step="1" disabled></label>'
     ).join('') : '';
     const tools = document.createElement('div');
     tools.className = 'classic-editor-cover-tools';
@@ -95,6 +95,14 @@ window.NexaPressClassicEditor.setupCover = ({editor, panel, openMedia, getConten
         if (tools.hidden) {
             updateNumberInputs();
             return;
+        }
+
+        if (!controls.hidden && marginInputs.length) {
+            const style = selected.ownerDocument.defaultView.getComputedStyle(selected);
+            for (const input of marginInputs) {
+                const margin = input.dataset.coverMargin === 'top' ? style.marginBlockStart : style.marginBlockEnd;
+                input.placeholder = margin.endsWith('px') ? margin.slice(0, -2) : '';
+            }
         }
 
         tools.style.maxHeight = Math.min(380, height) + 'px';
@@ -192,6 +200,8 @@ window.NexaPressClassicEditor.setupCover = ({editor, panel, openMedia, getConten
             if (input.value === '') cover.removeAttribute(attribute);
             else cover.setAttribute(attribute, String(input.valueAsNumber));
             synchronize();
+            // Read the applied margins after the cover layout updates.
+            requestAnimationFrame(schedulePosition);
         });
     }
 
