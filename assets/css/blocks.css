@@ -52,7 +52,8 @@
     gap: 6px 8px;
 }
 .classic-editor-cover-fields label { display: grid; gap: 4px; min-width: 0; font-size: .875rem; }
-.classic-editor-cover-fields select { min-width: 0; }
+.classic-editor-cover-fields select, .classic-editor-cover-fields input { min-width: 0; }
+.classic-editor-cover-image-options { max-width: 360px; }
 .classic-editor-content .nx-article-columns {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

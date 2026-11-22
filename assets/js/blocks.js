@@ -160,6 +160,7 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         const image = kind === 'image' ? blockImage(block) : null;
         find('[data-block-image-options]').hidden = !image;
         if (image) alt.value = image.alt;
+        coverEditor?.showImage(cover && image ? image : null);
         const button = kind === 'button' ? block.querySelector('a.nx-article-button') : null;
         find('[data-block-link-options]').hidden = !button;
         if (button) link.value = button.getAttribute('href') || '';

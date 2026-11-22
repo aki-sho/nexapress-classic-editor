@@ -37,6 +37,9 @@ add_action('admin_head', function (): void {
     if (is_file(BASE_PATH . '/public/assets/css/article-cover.css')) {
         echo '<link rel="stylesheet" href="' . e(nx_asset_url('assets/css/article-cover.css')) . '">';
     }
+    if (is_file(BASE_PATH . '/public/assets/js/article-cover.js')) {
+        echo '<script src="' . e(nx_asset_url('assets/js/article-cover.js')) . '" defer></script>';
+    }
     $cssFiles = [
         __DIR__ . '/assets/css/editor.css',
         __DIR__ . '/assets/css/toolbar.css',
@@ -70,6 +73,7 @@ add_action('admin_footer', function (): void {
     $config = [
         'serverSanitizesHtml' => class_exists(\app\Core\HtmlSanitizer::class),
         'coverEnabled' => $supportsPreview && is_file(BASE_PATH . '/public/assets/css/article-cover.css'),
+        'coverLayoutEnabled' => is_file(BASE_PATH . '/public/assets/js/article-cover.js'),
         'previewUrls' => $supportsPreview ? [
             'page' => url('admin/pages/editor-preview'),
             'post' => url('admin/posts/editor-preview'),

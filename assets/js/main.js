@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
             textarea.dispatchEvent(new Event('input', {bubbles: true}));
         }
         if (mode === 'preview') preview.mirrorBody(html);
+        window.nxRefreshArticleCovers?.(mode === 'preview' ? area.ownerDocument.body : area);
     }
 
     const blocks = classic.setupBlocks({
@@ -41,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const html = classic.sanitizeHtml(textarea.value);
         if (classic.sanitizeHtml(contentArea) !== html) contentArea.innerHTML = html;
         blocks.decorate(contentArea);
+        if (window.NexaPressClassicEditorConfig?.coverLayoutEnabled) window.nxRefreshArticleCovers?.(contentArea);
     }
 
     preview = classic.setupPreview({
@@ -49,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
             selectionManager.watch(area.ownerDocument);
             blocks.attach(area);
             area.addEventListener('input', synchronize);
+            window.nxRefreshArticleCovers?.(area.ownerDocument.body);
         },
     });
     classic.setupModes({editor, modeTabs, contentArea, textarea, renderVisual, synchronize, preview,

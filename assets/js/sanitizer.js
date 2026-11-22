@@ -8,11 +8,11 @@ window.NexaPressClassicEditor = window.NexaPressClassicEditor || {};
         strong: [], b: [], em: [], i: [], u: [], s: [], strike: [], del: [], mark: [], small: [], sup: [], sub: [],
         blockquote: ['cite'], pre: [], code: [],
         ul: [], ol: ['start'], li: ['value'],
-        a: ['href', 'target', 'rel'], img: ['src', 'alt', 'width', 'height', 'loading'],
+        a: ['href', 'target', 'rel'], img: ['src', 'alt', 'width', 'height', 'loading', 'data-nx-cover-pop'],
         figure: [], figcaption: [],
         table: [], thead: [], tbody: [], tfoot: [], tr: [],
         th: ['colspan', 'rowspan', 'align'], td: ['colspan', 'rowspan', 'align'],
-        div: ['align'], span: [], font: ['color', 'size'],
+        div: ['align', 'data-nx-cover-height'], span: [], font: ['color', 'size'],
     };
     const globalAttributes = ['class', 'style', 'title'];
     const removeWithContent = new Set([
@@ -90,6 +90,8 @@ window.NexaPressClassicEditor = window.NexaPressClassicEditor || {};
             case 'target': return ['_blank', '_self'].includes(lower) ? lower : null;
             case 'rel': return lower.split(/\s+/).filter(token => linkRelations.includes(token)).join(' ') || null;
             case 'width': case 'height': return integer(value, 1, 5000);
+            case 'data-nx-cover-height': return value === 'auto' ? value : integer(value, 80, 3000);
+            case 'data-nx-cover-pop': return integer(value, -300, 300);
             case 'colspan': case 'rowspan': return integer(value, 1, 100);
             case 'start': case 'value': return integer(value, -999999, 999999);
             case 'loading': return ['lazy', 'eager'].includes(lower) ? lower : null;
