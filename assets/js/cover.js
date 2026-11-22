@@ -1,6 +1,7 @@
 window.NexaPressClassicEditor.setupCover = ({editor, panel, openMedia, getContentArea, synchronize, selectCover, editContents}) => {
     const layoutEnabled = window.NexaPressClassicEditorConfig?.coverLayoutEnabled === true;
     const colorsEnabled = window.NexaPressClassicEditorConfig?.coverColorsEnabled === true;
+    const marginMaxPixels = window.NexaPressClassicEditorConfig?.coverMarginMaxPixels;
     const heightChoices = {'240': '最小 240 px', '400': '最小 400 px', '560': '最小 560 px',
         '720': '最小 720 px', screen: '画面いっぱい'};
     if (layoutEnabled) Object.assign(heightChoices, {auto: '自動（中身に合わせる）', fixed: '固定（px）'});
@@ -17,6 +18,10 @@ window.NexaPressClassicEditor.setupCover = ({editor, panel, openMedia, getConten
         overlay: ['重ねる色', colorsEnabled ? 'none' : 'black', colorsEnabled ? {none: 'なし', ...overlays} : overlays],
         opacity: ['不透明度', '40', Object.fromEntries(Array.from({length: 11}, (_, index) => [index * 10, index * 10 + '%']))],
     };
+    const marginFields = Number.isInteger(marginMaxPixels) ? [['top', '上'], ['bottom', '下']].map(([side, label]) =>
+        '<label>外側の余白（' + label + '・px）<input type="number" data-cover-margin="' + side + '"' +
+        ' min="0" max="' + marginMaxPixels + '" step="1" placeholder="既定" disabled></label>'
+    ).join('') : '';
     const tools = document.createElement('div');
     tools.className = 'classic-editor-cover-tools';
     tools.hidden = true;
@@ -38,7 +43,8 @@ window.NexaPressClassicEditor.setupCover = ({editor, panel, openMedia, getConten
             '<label>' + label + '<select data-cover-setting="' + name + '">' + Object.entries(choices).map(([value, title]) =>
                 '<option value="' + value + '">' + title + '</option>').join('') + '</select></label>' +
                 (name === 'height' && layoutEnabled ? '<label data-cover-fixed hidden>固定の高さ（px）' +
-                    '<input data-cover-fixed-pixels type="number" min="80" max="3000" step="1" required disabled></label>' : '')
+                    '<input data-cover-fixed-pixels type="number" min="80" max="3000" step="1" required disabled></label>' : '') +
+                (name === 'padding' ? marginFields : '')
         ).join('') + '</div>';
     tools.append(openButton, controls);
     editor.append(tools);
@@ -53,6 +59,7 @@ window.NexaPressClassicEditor.setupCover = ({editor, panel, openMedia, getConten
     if (layoutEnabled) panel.append(imageOptions);
 
     const fixedPixels = controls.querySelector('[data-cover-fixed-pixels]');
+    const marginInputs = [...controls.querySelectorAll('[data-cover-margin]')];
     const popDirection = imageOptions.querySelector('[data-cover-pop-direction]');
     const popPixels = imageOptions.querySelector('[data-cover-pop-pixels]');
     const backgroundButton = controls.querySelector('[data-cover-action="background"]');
@@ -72,6 +79,7 @@ window.NexaPressClassicEditor.setupCover = ({editor, panel, openMedia, getConten
         const area = getContentArea();
         if (!selected || !area?.contains(selected)) {
             tools.hidden = true;
+            updateNumberInputs();
             return;
         }
         const {dx, dy, clipLeft, clipTop, clipRight, clipBottom} = window.NexaPressClassicEditor.contentViewport(area);
@@ -85,7 +93,7 @@ window.NexaPressClassicEditor.setupCover = ({editor, panel, openMedia, getConten
         const height = clipBottom - clipTop - 2 * gap;
         tools.hidden = right <= left || bottom <= top || width <= 0 || height <= 0;
         if (tools.hidden) {
-            updateFixedInput();
+            updateNumberInputs();
             return;
         }
 
@@ -97,7 +105,7 @@ window.NexaPressClassicEditor.setupCover = ({editor, panel, openMedia, getConten
         const y = !controls.hidden && above >= clipTop + gap ? above : top + gap;
         tools.style.left = Math.round(Math.max(clipLeft + gap, Math.min(x, clipRight - tools.offsetWidth - gap))) + 'px';
         tools.style.top = Math.round(Math.max(clipTop + gap, Math.min(y, clipBottom - tools.offsetHeight - gap))) + 'px';
-        updateFixedInput();
+        updateNumberInputs();
     }
 
     function schedulePosition() {
@@ -118,14 +126,16 @@ window.NexaPressClassicEditor.setupCover = ({editor, panel, openMedia, getConten
         }
     }
 
-    function updateFixedInput() {
-        if (fixedPixels) fixedPixels.disabled = tools.hidden || controls.hidden || fixedPixels.closest('label').hidden;
+    function updateNumberInputs() {
+        const hidden = tools.hidden || controls.hidden;
+        if (fixedPixels) fixedPixels.disabled = hidden || fixedPixels.closest('label').hidden;
+        for (const input of marginInputs) input.disabled = hidden;
     }
 
     function setExpanded(expanded) {
         controls.hidden = !expanded;
         openButton.hidden = expanded;
-        updateFixedInput();
+        updateNumberInputs();
         schedulePosition();
     }
 
@@ -174,6 +184,17 @@ window.NexaPressClassicEditor.setupCover = ({editor, panel, openMedia, getConten
         synchronize();
     });
 
+    for (const input of marginInputs) {
+        const attribute = 'data-nx-cover-margin-' + input.dataset.coverMargin;
+        input.addEventListener('input', () => {
+            const cover = selected;
+            if (!getContentArea()?.contains(cover) || !input.validity.valid) return;
+            if (input.value === '') cover.removeAttribute(attribute);
+            else cover.setAttribute(attribute, String(input.valueAsNumber));
+            synchronize();
+        });
+    }
+
     function show(cover, asBlock) {
         const changed = selected !== cover;
         if (changed || selectedAsBlock !== asBlock) setExpanded(asBlock);
@@ -195,6 +216,9 @@ window.NexaPressClassicEditor.setupCover = ({editor, panel, openMedia, getConten
             const fixed = Boolean(cover?.dataset.nxCoverHeight && cover.dataset.nxCoverHeight !== 'auto');
             fixedPixels.closest('label').hidden = !fixed;
             fixedPixels.value = fixed ? cover.dataset.nxCoverHeight : '400';
+        }
+        for (const input of marginInputs) {
+            input.value = cover?.getAttribute('data-nx-cover-margin-' + input.dataset.coverMargin) ?? '';
         }
         schedulePosition();
         if (!cover) return;

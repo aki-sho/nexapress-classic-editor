@@ -77,6 +77,8 @@ add_action('admin_footer', function (): void {
         'coverEnabled' => $supportsPreview && is_file(BASE_PATH . '/public/assets/css/article-cover.css'),
         'coverLayoutEnabled' => is_file(BASE_PATH . '/public/assets/js/article-cover.js'),
         'coverColorsEnabled' => version_compare((string)($version['version'] ?? '0.0.0'), '2.31.2', '>='),
+        'coverMarginMaxPixels' => defined(\app\Core\HtmlSanitizer::class . '::COVER_MARGIN_MAX_PIXELS')
+            ? \app\Core\HtmlSanitizer::COVER_MARGIN_MAX_PIXELS : null,
         'previewUrls' => $supportsPreview ? [
             'page' => url('admin/pages/editor-preview'),
             'post' => url('admin/posts/editor-preview'),

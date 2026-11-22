@@ -12,7 +12,8 @@ window.NexaPressClassicEditor = window.NexaPressClassicEditor || {};
         figure: [], figcaption: [],
         table: [], thead: [], tbody: [], tfoot: [], tr: [],
         th: ['colspan', 'rowspan', 'align'], td: ['colspan', 'rowspan', 'align'],
-        div: ['align', 'data-nx-cover-height'], span: [], font: ['color', 'size'],
+        div: ['align', 'data-nx-cover-height', 'data-nx-cover-margin-top', 'data-nx-cover-margin-bottom'],
+        span: [], font: ['color', 'size'],
     };
     const globalAttributes = ['class', 'style', 'title'];
     const removeWithContent = new Set([
@@ -91,6 +92,8 @@ window.NexaPressClassicEditor = window.NexaPressClassicEditor || {};
             case 'rel': return lower.split(/\s+/).filter(token => linkRelations.includes(token)).join(' ') || null;
             case 'width': case 'height': return integer(value, 1, 5000);
             case 'data-nx-cover-height': return value === 'auto' ? value : integer(value, 80, 3000);
+            case 'data-nx-cover-margin-top': case 'data-nx-cover-margin-bottom':
+                return integer(value, 0, window.NexaPressClassicEditorConfig?.coverMarginMaxPixels ?? 9999);
             case 'data-nx-cover-pop': return integer(value, -300, 300);
             case 'colspan': case 'rowspan': return integer(value, 1, 100);
             case 'start': case 'value': return integer(value, -999999, 999999);
