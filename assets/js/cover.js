@@ -1,31 +1,47 @@
-window.NexaPressClassicEditor.setupCover = ({panel, openMedia, getContentArea, synchronize, editContents}) => {
+window.NexaPressClassicEditor.setupCover = ({editor, panel, openMedia, getContentArea, synchronize, selectCover, editContents}) => {
     const layoutEnabled = window.NexaPressClassicEditorConfig?.coverLayoutEnabled === true;
+    const colorsEnabled = window.NexaPressClassicEditorConfig?.coverColorsEnabled === true;
     const heightChoices = {'240': '最小 240 px', '400': '最小 400 px', '560': '最小 560 px',
         '720': '最小 720 px', screen: '画面いっぱい'};
     if (layoutEnabled) Object.assign(heightChoices, {auto: '自動（中身に合わせる）', fixed: '固定（px）'});
+    const overlays = {black: '黒', white: '白', navy: 'ネイビー', green: '深緑'};
     const fields = {
         width: ['幅', 'content', {content: '本文幅', wide: 'ワイド', full: '全幅'}],
         height: ['高さ', '400', heightChoices],
         padding: ['内側の余白', '32', {'0': 'なし', '16': '16 px', '32': '32 px', '64': '64 px'}],
         horizontal: ['横の位置', 'center', {left: '左', center: '中央', right: '右'}],
         vertical: ['縦の位置', 'center', {top: '上', center: '中央', bottom: '下'}],
-        overlay: ['重ねる色', 'black', {black: '黒', white: '白', navy: 'ネイビー', green: '深緑'}],
+        ...(colorsEnabled ? {background: ['背景色（下地）', 'auto', {
+            auto: '自動', white: '白', black: '黒', navy: '濃紺', transparent: '透過',
+        }]} : {}),
+        overlay: ['重ねる色', colorsEnabled ? 'none' : 'black', colorsEnabled ? {none: 'なし', ...overlays} : overlays],
         opacity: ['不透明度', '40', Object.fromEntries(Array.from({length: 11}, (_, index) => [index * 10, index * 10 + '%']))],
     };
+    const tools = document.createElement('div');
+    tools.className = 'classic-editor-cover-tools';
+    tools.hidden = true;
+    const openButton = document.createElement('button');
+    openButton.type = 'button';
+    openButton.textContent = 'カバー設定';
+    openButton.dataset.coverOpen = '';
     const controls = document.createElement('div');
     controls.className = 'classic-editor-cover-options';
+    controls.setAttribute('role', 'group');
+    controls.setAttribute('aria-label', 'カバー設定');
     controls.hidden = true;
     controls.innerHTML = '<div class="classic-editor-cover-actions">' +
         '<button type="button" data-cover-action="background">背景画像を選ぶ</button>' +
         '<button type="button" data-cover-action="remove" hidden>背景画像を外す</button>' +
-        '<button type="button" data-cover-action="edit">中身を編集</button></div>' +
+        '<button type="button" data-cover-action="edit">中身を編集</button>' +
+        '<button type="button" data-cover-action="close">閉じる</button></div>' +
         '<div class="classic-editor-cover-fields">' + Object.entries(fields).map(([name, [label, , choices]]) =>
             '<label>' + label + '<select data-cover-setting="' + name + '">' + Object.entries(choices).map(([value, title]) =>
                 '<option value="' + value + '">' + title + '</option>').join('') + '</select></label>' +
                 (name === 'height' && layoutEnabled ? '<label data-cover-fixed hidden>固定の高さ（px）' +
                     '<input data-cover-fixed-pixels type="number" min="80" max="3000" step="1" required disabled></label>' : '')
         ).join('') + '</div>';
-    panel.append(controls);
+    tools.append(openButton, controls);
+    editor.append(tools);
 
     const imageOptions = document.createElement('div');
     imageOptions.className = 'classic-editor-cover-fields classic-editor-cover-image-options';
@@ -42,10 +58,94 @@ window.NexaPressClassicEditor.setupCover = ({panel, openMedia, getContentArea, s
     const backgroundButton = controls.querySelector('[data-cover-action="background"]');
     const removeButton = controls.querySelector('[data-cover-action="remove"]');
     const inputs = [...controls.querySelectorAll('[data-cover-setting]')];
+    const overlayInput = controls.querySelector('[data-cover-setting="overlay"]');
+    const opacityInput = controls.querySelector('[data-cover-setting="opacity"]');
     const content = cover => cover.querySelector(':scope > .nx-article-cover-content');
     const background = cover => cover.querySelector(':scope > img.nx-article-cover-background');
     let selected = null;
+    let selectedAsBlock = false;
     let selectedImage = null;
+    let pendingPosition = 0;
+    const resize = new ResizeObserver(schedulePosition);
+
+    function position() {
+        const area = getContentArea();
+        if (!selected || !area?.contains(selected)) {
+            tools.hidden = true;
+            return;
+        }
+        const {dx, dy, clipLeft, clipTop, clipRight, clipBottom} = window.NexaPressClassicEditor.contentViewport(area);
+        const box = selected.getBoundingClientRect();
+        const left = Math.max(clipLeft, box.left + dx);
+        const right = Math.min(clipRight, box.right + dx);
+        const top = Math.max(clipTop, box.top + dy);
+        const bottom = Math.min(clipBottom, box.bottom + dy);
+        const gap = 8;
+        const width = clipRight - clipLeft - 2 * gap;
+        const height = clipBottom - clipTop - 2 * gap;
+        tools.hidden = right <= left || bottom <= top || width <= 0 || height <= 0;
+        if (tools.hidden) {
+            updateFixedInput();
+            return;
+        }
+
+        tools.style.maxHeight = Math.min(380, height) + 'px';
+        tools.style.width = controls.hidden ? '' : Math.min(920, width) + 'px';
+        tools.style.maxWidth = width + 'px';
+        const x = controls.hidden ? right - tools.offsetWidth - gap : left + gap;
+        const above = top - tools.offsetHeight - gap;
+        const y = !controls.hidden && above >= clipTop + gap ? above : top + gap;
+        tools.style.left = Math.round(Math.max(clipLeft + gap, Math.min(x, clipRight - tools.offsetWidth - gap))) + 'px';
+        tools.style.top = Math.round(Math.max(clipTop + gap, Math.min(y, clipBottom - tools.offsetHeight - gap))) + 'px';
+        updateFixedInput();
+    }
+
+    function schedulePosition() {
+        if (pendingPosition) return;
+        pendingPosition = requestAnimationFrame(() => {
+            pendingPosition = 0;
+            position();
+        });
+    }
+
+    window.addEventListener('scroll', schedulePosition, true);
+    window.addEventListener('resize', schedulePosition);
+    function attach(area) {
+        const doc = area.ownerDocument;
+        if (doc !== document) {
+            doc.addEventListener('scroll', schedulePosition, true);
+            doc.defaultView.addEventListener('resize', schedulePosition);
+        }
+    }
+
+    function updateFixedInput() {
+        if (fixedPixels) fixedPixels.disabled = tools.hidden || controls.hidden || fixedPixels.closest('label').hidden;
+    }
+
+    function setExpanded(expanded) {
+        controls.hidden = !expanded;
+        openButton.hidden = expanded;
+        updateFixedInput();
+        schedulePosition();
+    }
+
+    function closeControls() {
+        setExpanded(false);
+        openButton.focus({preventScroll: true});
+    }
+
+    openButton.addEventListener('click', () => {
+        if (!selected || !getContentArea()?.contains(selected)) return;
+        selectCover(selected);
+        setExpanded(true);
+        backgroundButton.focus({preventScroll: true});
+    });
+    tools.addEventListener('keydown', event => {
+        if (event.key !== 'Escape' || controls.hidden) return;
+        event.preventDefault();
+        event.stopPropagation();
+        closeControls();
+    });
 
     function showImage(image) {
         selectedImage = layoutEnabled ? image : null;
@@ -74,27 +174,57 @@ window.NexaPressClassicEditor.setupCover = ({panel, openMedia, getContentArea, s
         synchronize();
     });
 
-    function show(cover) {
+    function show(cover, asBlock) {
+        const changed = selected !== cover;
+        if (changed || selectedAsBlock !== asBlock) setExpanded(asBlock);
+        selectedAsBlock = asBlock;
         selected = cover;
-        controls.hidden = !cover;
+        if (changed) {
+            resize.disconnect();
+            if (cover) {
+                resize.observe(cover);
+                resize.observe(cover.ownerDocument.defaultView.frameElement || getContentArea());
+            }
+        }
+        refresh();
+    }
+
+    function refresh() {
+        const cover = selected;
         if (fixedPixels) {
             const fixed = Boolean(cover?.dataset.nxCoverHeight && cover.dataset.nxCoverHeight !== 'auto');
             fixedPixels.closest('label').hidden = !fixed;
-            fixedPixels.disabled = !fixed;
             fixedPixels.value = fixed ? cover.dataset.nxCoverHeight : '400';
         }
+        schedulePosition();
         if (!cover) return;
         const image = background(cover);
         backgroundButton.textContent = image ? '背景画像を変更' : '背景画像を選ぶ';
         removeButton.hidden = !image;
         for (const input of inputs) {
             const name = input.dataset.coverSetting;
-            const [, defaultValue, choices] = fields[name];
             if (name === 'height' && layoutEnabled && cover.dataset.nxCoverHeight) {
                 input.value = cover.dataset.nxCoverHeight === 'auto' ? 'auto' : 'fixed';
             } else {
-                input.value = Object.keys(choices).find(value => cover.classList.contains('nx-cover-' + name + '-' + value)) ?? defaultValue;
+                input.value = setting(cover, name) ?? fields[name][1];
             }
+        }
+        if (colorsEnabled) {
+            const opacity = setting(cover, 'opacity');
+            if (overlayInput.value === 'none' && Number(opacity) > 0) overlayInput.value = 'black';
+            opacityInput.disabled = overlayInput.value === 'none';
+            opacityInput.value = opacity ?? (opacityInput.disabled ? '0' : '40');
+        }
+    }
+
+    function setting(cover, name) {
+        return Object.keys(fields[name][2]).find(value => cover.classList.contains('nx-cover-' + name + '-' + value));
+    }
+
+    function clearSetting(cover, name) {
+        const prefix = 'nx-cover-' + name + '-';
+        for (const token of Array.from(cover.classList)) {
+            if (token.startsWith(prefix)) cover.classList.remove(token);
         }
     }
 
@@ -106,19 +236,20 @@ window.NexaPressClassicEditor.setupCover = ({panel, openMedia, getContentArea, s
         const [, defaultValue, choices] = fields[name];
         const value = input.value;
         if (!Object.hasOwn(choices, value)) return;
-        const prefix = 'nx-cover-' + name + '-';
-        for (const token of [...cover.classList]) {
-            if (token.startsWith(prefix)) cover.classList.remove(token);
+        clearSetting(cover, name);
+        if (colorsEnabled && name === 'overlay') {
+            if (!setting(cover, 'background')) cover.classList.add('nx-cover-background-auto');
+            if (value === 'none') clearSetting(cover, 'opacity');
         }
         if (name === 'height' && layoutEnabled) {
             delete cover.dataset.nxCoverHeight;
         }
         if (name === 'height' && layoutEnabled && (value === 'auto' || value === 'fixed')) {
             cover.dataset.nxCoverHeight = value === 'auto' ? 'auto' : '400';
-        } else if (value !== defaultValue) {
-            cover.classList.add(prefix + value);
+        } else if (value !== defaultValue || (colorsEnabled && (name === 'opacity' || name === 'background'))) {
+            cover.classList.add('nx-cover-' + name + '-' + value);
         }
-        if (name === 'height') show(cover);
+        refresh();
         synchronize();
     });
 
@@ -126,12 +257,15 @@ window.NexaPressClassicEditor.setupCover = ({panel, openMedia, getContentArea, s
         const action = event.target.closest('[data-cover-action]')?.dataset.coverAction;
         const cover = selected;
         if (!action || !getContentArea()?.contains(cover)) return;
-        if (action === 'edit') {
+        if (action === 'close') {
+            closeControls();
+        } else if (action === 'edit') {
+            setExpanded(false);
             editContents(content(cover));
         } else if (action === 'remove') {
             background(cover)?.remove();
-            show(cover);
-            backgroundButton.focus();
+            refresh();
+            backgroundButton.focus({preventScroll: true});
             synchronize();
         } else if (action === 'background') {
             openMedia(image => {
@@ -142,7 +276,7 @@ window.NexaPressClassicEditor.setupCover = ({panel, openMedia, getContentArea, s
                 img.alt = '';
                 img.setAttribute('src', src);
                 if (img.parentElement !== cover) cover.prepend(img);
-                show(cover);
+                refresh();
                 synchronize();
                 return true;
             });
@@ -151,7 +285,7 @@ window.NexaPressClassicEditor.setupCover = ({panel, openMedia, getContentArea, s
 
     function create(doc) {
         const cover = doc.createElement('div');
-        cover.className = 'nx-article-cover';
+        cover.className = colorsEnabled ? 'nx-article-cover nx-cover-background-auto' : 'nx-article-cover';
         const body = doc.createElement('div');
         body.className = 'nx-article-cover-content';
         cover.append(body);
@@ -173,5 +307,5 @@ window.NexaPressClassicEditor.setupCover = ({panel, openMedia, getContentArea, s
         }
     }
 
-    return {show, showImage, create, decorate, content};
+    return {show, showImage, create, decorate, content, attach};
 };

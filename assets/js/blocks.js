@@ -62,7 +62,8 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
     }
     const picker = enabled ? classic.setupBlockPicker({editor, getContentArea, groups, onChoose: insertBlock}) : null;
     const coverEditor = coverEnabled ? classic.setupCover({
-        panel, openMedia, getContentArea, synchronize,
+        editor, panel, openMedia, getContentArea, synchronize,
+        selectCover: cover => selectWholeBlock(getContentArea(), cover),
         editContents: scope => {
             if (!scope) return;
             ensureEditingLine(scope);
@@ -153,7 +154,8 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         bar.hidden = !scope && !block;
         find('[data-block-selection]').hidden = !block;
         find('[data-block-label]').textContent = kind === 'columns' ? 'カラム全体' : labels.get(kind) || '';
-        coverEditor?.show(kind === 'cover' ? block : null);
+        const isCover = kind === 'cover';
+        coverEditor?.show(isCover ? block : cover, isCover);
         const canMove = block?.nodeType === Node.ELEMENT_NODE && block.parentElement === (scope || getContentArea());
         find('[data-block-move="up"]').disabled = !canMove || !block.previousElementSibling;
         find('[data-block-move="down"]').disabled = !canMove || !block.nextElementSibling || classic.isEmptyContinuation(block.nextElementSibling);
@@ -196,6 +198,7 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         if (attached.has(area)) return;
         attached.add(area);
         picker?.attach(area);
+        coverEditor?.attach(area);
         const doc = area.ownerDocument;
         area.addEventListener('mousedown', event => {
             if (clickedObject(event.target)) event.preventDefault();

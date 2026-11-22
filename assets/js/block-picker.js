@@ -121,21 +121,13 @@ window.NexaPressClassicEditor.setupBlockPicker = ({editor, getContentArea, group
     function boundsFor({area, scope, line, range, breakNode}) {
         if (area !== getContentArea() || (line && !area.contains(line)) || !scope.contains(range.startContainer)) return null;
         const view = area.ownerDocument.defaultView;
-        const frame = view.frameElement;
-        const frameBox = frame?.getBoundingClientRect();
-        const dx = frame ? frameBox.left + frame.clientLeft : 0;
-        const dy = frame ? frameBox.top + frame.clientTop : 0;
+        const {dx, dy, clipLeft, clipTop, clipRight, clipBottom} = window.NexaPressClassicEditor.contentViewport(area);
         const bounds = (line || breakNode || scope).getBoundingClientRect();
         const caret = range.getBoundingClientRect();
         const style = view.getComputedStyle(line || scope);
         const x = (caret.height ? caret.left : bounds.left + parseFloat(style.paddingLeft)) + dx;
         const y = (caret.height ? caret.top : bounds.top + (breakNode ? bounds.height : parseFloat(style.paddingTop))) + dy;
         const height = caret.height || parseFloat(style.lineHeight) || 22;
-        const areaBox = area.getBoundingClientRect();
-        const clipLeft = Math.max(0, dx, dx + areaBox.left);
-        const clipTop = Math.max(0, dy, dy + areaBox.top);
-        const clipRight = Math.min(document.documentElement.clientWidth, dx + view.innerWidth, dx + areaBox.right);
-        const clipBottom = Math.min(document.documentElement.clientHeight, dy + view.innerHeight, dy + areaBox.bottom);
         if (x < clipLeft - 1 || x >= clipRight || y + height <= clipTop || y >= clipBottom) return null;
         return {x, y: Math.max(y, clipTop), height, clipRight};
     }

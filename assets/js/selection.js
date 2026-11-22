@@ -1,3 +1,19 @@
+window.NexaPressClassicEditor.contentViewport = area => {
+    const view = area.ownerDocument.defaultView;
+    const frame = view.frameElement;
+    const frameBox = frame?.getBoundingClientRect();
+    const dx = frame ? frameBox.left + frame.clientLeft : 0;
+    const dy = frame ? frameBox.top + frame.clientTop : 0;
+    const bounds = area.getBoundingClientRect();
+    return {
+        dx, dy,
+        clipLeft: Math.max(0, dx, dx + bounds.left),
+        clipTop: Math.max(0, dy, dy + bounds.top),
+        clipRight: Math.min(document.documentElement.clientWidth, dx + view.innerWidth, dx + bounds.right),
+        clipBottom: Math.min(document.documentElement.clientHeight, dy + view.innerHeight, dy + bounds.bottom),
+    };
+};
+
 window.NexaPressClassicEditor.blockScope = (area, node) => {
     const element = node?.nodeType === Node.ELEMENT_NODE ? node : node?.parentElement;
     const scope = element?.closest('.nx-article-column[data-nx-column], .nx-article-cover-content[data-nx-cover-content]');

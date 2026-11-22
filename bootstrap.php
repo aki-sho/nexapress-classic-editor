@@ -70,10 +70,13 @@ add_action('admin_footer', function (): void {
      * JavaScriptへメディア一覧URLを渡す
      */
     $supportsPreview = class_exists(\app\Core\EditorPreview::class);
+    $versionPath = BASE_PATH . '/config/version.php';
+    $version = is_file($versionPath) ? (require $versionPath) : [];
     $config = [
         'serverSanitizesHtml' => class_exists(\app\Core\HtmlSanitizer::class),
         'coverEnabled' => $supportsPreview && is_file(BASE_PATH . '/public/assets/css/article-cover.css'),
         'coverLayoutEnabled' => is_file(BASE_PATH . '/public/assets/js/article-cover.js'),
+        'coverColorsEnabled' => version_compare((string)($version['version'] ?? '0.0.0'), '2.31.2', '>='),
         'previewUrls' => $supportsPreview ? [
             'page' => url('admin/pages/editor-preview'),
             'post' => url('admin/posts/editor-preview'),

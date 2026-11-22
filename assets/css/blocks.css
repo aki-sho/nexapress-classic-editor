@@ -31,7 +31,9 @@
     min-width: 28px;
     padding-inline: 4px;
 }
-.classic-editor-preview-controls button, [data-preview-retry], .classic-editor-cover-actions button {
+.classic-editor-preview-controls button,
+[data-preview-retry],
+.classic-editor-cover-tools button {
     min-height: 30px;
     padding: 3px 7px;
     border: 1px solid #cbd5e1;
@@ -44,6 +46,20 @@
 .classic-editor-block-bar button:disabled { opacity: .5; }
 .classic-editor-blocks label { max-width: 430px; }
 .classic-editor-blocks [data-block-error] { color: #ad182f; }
+.classic-editor-cover-tools {
+    position: fixed;
+    z-index: 9999;
+    box-sizing: border-box;
+    padding: 7px;
+    overflow: auto;
+    border: 1px solid #c5d1e2;
+    border-radius: 7px;
+    color: #1e293b;
+    background: #f8fafc;
+    box-shadow: 0 4px 16px rgb(23 42 77 / 16%);
+}
+.classic-editor-cover-tools[hidden], .classic-editor-cover-tools [hidden] { display: none !important; }
+.classic-editor-cover-tools [data-cover-action="close"] { margin-inline-start: auto; }
 .classic-editor-cover-options { display: grid; gap: 8px; min-width: 0; }
 .classic-editor-cover-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .classic-editor-cover-fields {

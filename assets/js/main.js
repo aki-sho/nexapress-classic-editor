@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!area || !changed.includes('content')) return;
         const active = document.activeElement;
         const restoreFocus = area.contains(area.ownerDocument.activeElement) ||
-            toolbar.contains(active) || (editor.contains(active) && active.closest('.classic-editor-blocks'));
+            toolbar.contains(active) || (editor.contains(active) && active.closest('.classic-editor-blocks, .classic-editor-cover-tools'));
         const mark = restoreFocus ? selectionManager.bookmark() : null;
         renderBody(area);
         if (restoreFocus) selectionManager.restore(mark);
