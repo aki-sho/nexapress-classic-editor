@@ -10,7 +10,8 @@ window.NexaPressClassicEditor.setupModes = (options) => {
         renderVisual,
         synchronize,
         setMode,
-        preview
+        preview,
+        onFormat
     } = options;
 
     /*
@@ -50,7 +51,10 @@ window.NexaPressClassicEditor.setupModes = (options) => {
         preview?.hide();
         if (mode === 'html') {
             const html = window.NexaPressClassicEditor.formatHtml(textarea.value);
-            if (html !== textarea.value) textarea.value = html;
+            if (html !== textarea.value) {
+                textarea.value = html;
+                onFormat();
+            }
             textarea.focus();
 
             return;

@@ -5,7 +5,8 @@ window.NexaPressClassicEditor.setupToolbar = (options) => {
     const {
         toolbar,
         selectionManager,
-        synchronize
+        synchronize,
+        history
     } = options;
 
     toolbar.addEventListener('click', (event) => {
@@ -24,6 +25,10 @@ window.NexaPressClassicEditor.setupToolbar = (options) => {
         const command = button.dataset.command;
 
         if (!command) {
+            return;
+        }
+        if (command === 'undo' || command === 'redo') {
+            history[command]();
             return;
         }
 

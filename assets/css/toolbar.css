@@ -37,6 +37,12 @@
     cursor: pointer;
 }
 
+.classic-editor-toolbar button[data-command="undo"]:disabled,
+.classic-editor-toolbar button[data-command="redo"]:disabled {
+    cursor: default;
+    opacity: .45;
+}
+
 .classic-editor-toolbar button:hover:not(:disabled) {
     background: #e2e8f0;
 }

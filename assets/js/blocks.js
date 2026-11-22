@@ -396,11 +396,11 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         select(activeBlock, activeScope, wholeBlockSelected);
         synchronize();
     });
-    alt.addEventListener('input', () => {
+    alt.addEventListener('input', event => {
         const img = blockImage(activeBlock);
         if (!img) return;
         img.alt = alt.value;
-        synchronize();
+        synchronize(event);
     });
     link.addEventListener('change', () => {
         const anchor = activeBlock?.querySelector?.('a.nx-article-button');

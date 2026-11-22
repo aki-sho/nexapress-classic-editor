@@ -47,7 +47,15 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
             </button>
         </form>
 
-        <p class="classic-editor-media-status">
+        <label class="classic-editor-media-filter">
+            フォルダ
+            <select data-media-folder disabled>
+                <option value="">すべて</option>
+                <option value="0">未分類</option>
+            </select>
+        </label>
+
+        <p class="classic-editor-media-status" role="status">
             画像を読み込んでいます。
         </p>
 
@@ -79,12 +87,14 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
     const uploadButton = dialog.querySelector(
         '[data-media-submit]'
     );
+    const folder = dialog.querySelector('[data-media-folder]');
     const config = window.NexaPressClassicEditorConfig || {};
 
     if (
         !(closeButton instanceof HTMLButtonElement) ||
         !(status instanceof HTMLParagraphElement) ||
         !(grid instanceof HTMLDivElement) ||
+        !(folder instanceof HTMLSelectElement) ||
         !(uploadForm instanceof HTMLFormElement) ||
         !(uploadInput instanceof HTMLInputElement) ||
         !(uploadButton instanceof HTMLButtonElement)
@@ -102,6 +112,23 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
     feedback.hidden = true;
     contentArea.before(feedback);
     let opening = null;
+    let images = [];
+
+    const formatNumber = new Intl.NumberFormat('ja-JP', {maximumFractionDigits: 1});
+    const byteLabel = bytes => {
+        if (!(bytes > 0)) return '';
+        if (bytes >= 1024 * 1024) return formatNumber.format(bytes / (1024 * 1024)) + ' MB';
+        if (bytes >= 1024) return formatNumber.format(bytes / 1024) + ' KB';
+        return bytes + ' B';
+    };
+
+    function setFolders(folders) {
+        const last = folder.value;
+        folder.length = 2;
+        for (const entry of folders) folder.add(new Option(entry.name, entry.id));
+        folder.value = Array.from(folder.options).some(option => option.value === last) ? last : '';
+        folder.disabled = false;
+    }
 
     const insertImage = (image) => {
         const insert = opening.insert;
@@ -115,32 +142,48 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
     /*
      * 取得した画像を一覧表示
      */
-    const renderImages = (images) => {
+    const renderImages = () => {
         grid.replaceChildren();
+        grid.scrollTop = 0;
+        const filtered = folder.value === '' ? images : images.filter(image => String(image.folder_id ?? 0) === folder.value);
 
-        if (images.length === 0) {
-            status.textContent = '画像が登録されていません。';
+        if (filtered.length === 0) {
+            status.textContent = folder.value === '' ? '画像が登録されていません。' : 'このフォルダに画像はありません。';
             status.hidden = false;
             return;
         }
 
         status.hidden = true;
 
-        images.forEach((image) => {
+        filtered.forEach(image => {
             const button = document.createElement('button');
+            const thumb = document.createElement('span');
             const preview = document.createElement('img');
+            const size = document.createElement('span');
             const title = document.createElement('span');
 
             button.type = 'button';
             button.className = 'classic-editor-media-item';
-
-            preview.src = image.url;
-            preview.alt = image.description || image.title;
-            preview.loading = 'lazy';
-
+            thumb.className = 'classic-editor-media-thumb';
+            title.className = 'classic-editor-media-name';
             title.textContent = image.title || '無題';
+            size.className = 'classic-editor-media-size';
+            size.setAttribute('aria-hidden', 'true');
 
-            button.append(preview, title);
+            const updateSize = () => {
+                const dimensions = preview.naturalWidth && preview.naturalHeight
+                    ? preview.naturalWidth + ' × ' + preview.naturalHeight + ' px' : '';
+                const label = [dimensions, byteLabel(image.file_size)].filter(Boolean).join(' · ');
+                size.textContent = label;
+                if (label) button.setAttribute('aria-description', label);
+            };
+            preview.alt = image.description || image.title || '';
+            preview.loading = 'lazy';
+            preview.addEventListener('load', updateSize, {once: true});
+            preview.src = image.url;
+            updateSize();
+            thumb.append(preview, size);
+            button.append(thumb, title);
 
             button.addEventListener('click', () => {
                 insertImage(image);
@@ -149,6 +192,8 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
             grid.append(button);
         });
     };
+
+    folder.addEventListener('change', renderImages);
 
     /*
      * NexaPressから画像一覧を取得
@@ -163,7 +208,7 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
 
         status.hidden = false;
         status.textContent = '画像を読み込んでいます。';
-
+        folder.disabled = true;
         grid.replaceChildren();
 
         try {
@@ -176,11 +221,9 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
             const data = await response.json();
             if (!dialog.open || opening !== request) return;
 
-            renderImages(
-                Array.isArray(data.images)
-                    ? data.images
-                    : []
-            );
+            images = Array.isArray(data.images) ? data.images : [];
+            setFolders(Array.isArray(data.folders) ? data.folders : []);
+            renderImages();
         } catch (error) {
             if (!dialog.open || opening !== request) return;
             status.hidden = false;
@@ -260,6 +303,7 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
                 return;
             }
 
+            folder.value = '';
             await loadImages(request);
             if (!dialog.open || opening !== request) return;
 

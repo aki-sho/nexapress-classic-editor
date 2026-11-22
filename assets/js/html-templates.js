@@ -97,11 +97,6 @@ window.NexaPressClassicEditor.setupHtmlTemplates = (options) => {
     textarea.addEventListener('input', () => {
         if (lastChange && textarea.value !== lastChange.applied) clearUndo();
     });
-    textarea.addEventListener('keydown', event => {
-        if ((event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === 'z' && undoTemplate()) {
-            event.preventDefault();
-        }
-    });
 
     /*
      * 選択したテンプレートを本文へ適用

@@ -107,6 +107,7 @@ add_action('admin_footer', function (): void {
     $jsFiles = [
         __DIR__ . '/assets/js/sanitizer.js',
         __DIR__ . '/assets/js/selection.js',
+        __DIR__ . '/assets/js/history.js',
         __DIR__ . '/assets/js/toolbar.js',
         __DIR__ . '/assets/js/modes.js',
         __DIR__ . '/assets/js/preview.js',

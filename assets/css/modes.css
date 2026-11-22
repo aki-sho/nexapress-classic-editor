@@ -36,7 +36,7 @@
    HTML編集モードの表示切り替え
 ======================================== */
 
-.classic-editor.is-html-mode .classic-editor-toolbar,
+.classic-editor.is-html-mode .classic-editor-toolbar > :not([data-command="undo"]):not([data-command="redo"]),
 .classic-editor.is-html-mode .classic-editor-content {
     display: none;
 }

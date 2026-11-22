@@ -29,36 +29,23 @@ class MediaController
     {
         Auth::requireLogin();
 
-        $mediaItems = array_filter(
-            Media::all(),
-            function (array $media): bool {
-                return ($media['file_type'] ?? '') === 'image';
+        $images = [];
+        foreach (Media::all() as $media) {
+            if (($media['file_type'] ?? '') !== 'image') {
+                continue;
             }
-        );
+            $images[] = [
+                'id' => (int)($media['id'] ?? 0),
+                'title' => (string)($media['title'] ?? ''),
+                'description' => (string)($media['description'] ?? ''),
+                'url' => public_url((string)($media['file_path'] ?? '')),
+                'folder_id' => isset($media['folder_id']) ? (int)$media['folder_id'] : null,
+                'file_size' => (int)($media['file_size'] ?? 0),
+            ];
+        }
 
-        $images = array_map(
-            function (array $media): array {
-                return [
-                    'id' => (int)($media['id'] ?? 0),
-                    'title' => (string)($media['title'] ?? ''),
-                    'description' => (string)(
-                        $media['description'] ?? ''
-                    ),
-                    'url' => public_url(
-                        (string)($media['file_path'] ?? '')
-                    ),
-                ];
-            },
-            array_values($mediaItems)
-        );
-
-        header('Content-Type: application/json; charset=UTF-8');
-
-        echo json_encode(
-            ['images' => $images],
-            JSON_UNESCAPED_UNICODE |
-            JSON_UNESCAPED_SLASHES
-        );
+        $folders = method_exists(Media::class, 'folders') ? Media::folders() : [];
+        $this->respond(['images' => $images, 'folders' => $folders]);
     }
 
     /*

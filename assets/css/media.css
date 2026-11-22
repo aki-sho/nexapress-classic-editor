@@ -5,11 +5,17 @@
 .classic-editor-media-dialog {
     width: min(900px, 90vw);
     max-height: 85vh;
+    max-height: 85dvh;
     padding: 0;
     overflow: hidden;
     background: #fff;
     border: 0;
     border-radius: 8px;
+}
+
+.classic-editor-media-dialog[open] {
+    display: flex;
+    flex-direction: column;
 }
 
 .classic-editor-media-dialog::backdrop {
@@ -23,6 +29,7 @@
 
 .classic-editor-media-header {
     display: flex;
+    flex: none;
     align-items: center;
     justify-content: space-between;
     padding: 16px 20px;
@@ -40,6 +47,7 @@
 ======================================== */
 
 .classic-editor-media-status {
+    flex: none;
     margin: 0;
     padding: 20px;
     color: #64748b;
@@ -50,19 +58,41 @@
    画像一覧
 ======================================== */
 
+.classic-editor-media-filter {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 20px;
+    border-bottom: 1px solid #cbd5e1;
+    font-size: 13px;
+}
+
+.classic-editor-media-filter select {
+    max-width: 100%;
+    min-width: 0;
+    width: min(100%, 360px);
+    margin: 0;
+    padding: 4px 8px;
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+}
+
 .classic-editor-media-grid {
     display: grid;
     grid-template-columns: repeat(
         auto-fill,
-        minmax(150px, 1fr)
+        minmax(min(150px, 100%), 1fr)
     );
     gap: 12px;
-    max-height: 65vh;
+    min-height: 0;
     padding: 20px;
     overflow-y: auto;
 }
 
 .classic-editor-media-item {
+    min-width: 0;
     padding: 8px;
     text-align: left;
     background: #fff;
@@ -76,6 +106,11 @@
     box-shadow: 0 0 0 2px #bfdbfe;
 }
 
+.classic-editor-media-thumb {
+    position: relative;
+    display: block;
+}
+
 .classic-editor-media-item img {
     display: block;
     width: 100%;
@@ -84,7 +119,26 @@
     background: #e2e8f0;
 }
 
-.classic-editor-media-item span {
+.classic-editor-media-size {
+    position: absolute;
+    inset: auto 3px 3px auto;
+    max-width: calc(100% - 6px);
+    padding: 2px 4px;
+    border-radius: 3px;
+    background: #0f172a;
+    color: #fff;
+    font-size: 11px;
+    line-height: 1.2;
+    text-align: right;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.classic-editor-media-item:is(:hover, :focus-visible) .classic-editor-media-size:not(:empty) {
+    visibility: visible;
+}
+
+.classic-editor-media-name {
     display: block;
     margin-top: 7px;
     overflow: hidden;
@@ -100,6 +154,7 @@
 
 .classic-editor-media-upload {
     display: flex;
+    flex: none;
     flex-wrap: wrap;
     align-items: center;
     gap: 10px;
@@ -110,6 +165,7 @@
 
 .classic-editor-media-upload input[type="file"] {
     flex: 1 1 300px;
+    min-width: 0;
     width: auto;
     min-height: 38px;
     margin: 0;

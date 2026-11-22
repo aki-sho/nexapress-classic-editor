@@ -47,6 +47,33 @@ window.NexaPressClassicEditor.createSelectionManager = getContentArea => {
         });
     }
 
+    function bookmark() {
+        const area = getContentArea();
+        const selection = area?.ownerDocument.getSelection();
+        const position = area?.contains(selection?.focusNode) ? selection.focusNode : range()?.endContainer;
+        if (!position) return null;
+        const offset = position === selection?.focusNode ? selection.focusOffset : range().endOffset;
+        const path = [];
+        for (let node = position; node !== area; node = node.parentNode) {
+            path.unshift(Array.prototype.indexOf.call(node.parentNode.childNodes, node));
+        }
+        return {path, offset};
+    }
+
+    function restore(mark) {
+        const area = getContentArea();
+        if (!area) return;
+        const node = mark?.path.reduce((parent, index) => parent?.childNodes[index], area);
+        if (node) {
+            savedRange = area.ownerDocument.createRange();
+            const length = node.nodeType === Node.TEXT_NODE ? node.length : node.childNodes.length;
+            savedRange.setStart(node, Math.min(mark.offset, length));
+            savedRange.collapse(true);
+        }
+        activate(true);
+        save();
+    }
+
     watch(document);
-    return {save, range, activate, watch, clear: () => { savedRange = null; }};
+    return {save, range, activate, watch, bookmark, restore, clear: () => { savedRange = null; }};
 };

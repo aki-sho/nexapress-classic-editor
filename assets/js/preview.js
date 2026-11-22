@@ -81,12 +81,12 @@ window.NexaPressClassicEditor.setupPreview = ({editor, modeTabs, form, textarea,
         body.innerHTML = html;
         mirrorBody(html);
 
-        field.addEventListener('input', () => {
+        field.addEventListener('input', event => {
             const text = field.textContent.replace(/[\r\n]+/g, ' ');
             const value = Array.from(text).slice(0, title.maxLength > 0 ? title.maxLength : 255).join('');
             if (title.value !== value) {
                 title.value = value;
-                title.dispatchEvent(new Event('input', {bubbles: true}));
+                title.dispatchEvent(new InputEvent('input', {bubbles: true, inputType: event.inputType}));
             }
             updateTitle();
         });
