@@ -45,6 +45,18 @@
     display: block;
 }
 
+.classic-editor-html-shortcuts {
+    display: none;
+    padding: 4px 10px;
+    color: #475569;
+    background: #f1f5f9;
+    font-size: .75rem;
+}
+
+.classic-editor.is-html-mode .classic-editor-html-shortcuts {
+    display: block;
+}
+
 .classic-editor.is-preview-mode .classic-editor-content,
 .classic-editor.is-html-mode .classic-editor-blocks,
 .classic-editor-preview[hidden],

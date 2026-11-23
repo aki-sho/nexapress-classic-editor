@@ -2,11 +2,11 @@
   "id": "classic-editor",
   "name": "クラシックエディター",
   "description": "固定ページと投稿にビジュアル、HTML、プレビュー編集を追加します。",
-  "version": "1.11.0",
+  "version": "1.11.1",
   "bootstrap": "bootstrap.php",
   "bundled": true,
   "icon_url": "https://raw.githubusercontent.com/aki-sho/nexapress-classic-editor/main/img.png",
-  "download_url": "https://github.com/aki-sho/nexapress-classic-editor/releases/download/v1.11.0/classic-editor-v1.11.0.zip",
+  "download_url": "https://github.com/aki-sho/nexapress-classic-editor/releases/download/v1.11.1/classic-editor-v1.11.1.zip",
   "requires": {
     "nexapress": "2.35.0",
     "php": "8.0"
