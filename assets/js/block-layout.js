@@ -16,7 +16,7 @@ window.NexaPressClassicEditor.setupBlockLayout = ({panel, synchronize, prepare, 
     inputs.hidden = true;
     inputs.innerHTML =
         '<div class="classic-editor-layout-group" data-layout-group hidden>' +
-            number('幅（%）', 'width', 1, 100) + select('配置', 'placement', placementOptions) +
+            number('配置先に対する幅（%）', 'width', 1, 100) + select('配置', 'placement', placementOptions) +
             number('間隔（px）', 'gap', 0, 64) +
             '<div data-layout-column-fields hidden>' +
                 select('列の上下揃え', 'columnAlign', {start: '上揃え', center: '中央揃え', end: '下揃え', stretch: '高さを揃える'}) +

@@ -81,6 +81,7 @@ add_action('admin_footer', function (): void {
         'serverSanitizesHtml' => class_exists(\app\Core\HtmlSanitizer::class),
         'coverEnabled' => $supportsPreview && is_file(BASE_PATH . '/public/assets/css/article-cover.css'),
         'coverLayoutEnabled' => is_file(BASE_PATH . '/public/assets/js/article-cover.js'),
+        'coverUsesPageWidth' => version_compare((string)($version['version'] ?? '0.0.0'), '2.37.0', '>='),
         'coverContentWidthEnabled' => version_compare((string)($version['version'] ?? '0.0.0'), '2.36.2', '>='),
         'coverColorsEnabled' => version_compare((string)($version['version'] ?? '0.0.0'), '2.31.2', '>='),
         'coverMarginMaxPixels' => defined(\app\Core\HtmlSanitizer::class . '::COVER_MARGIN_MAX_PIXELS')

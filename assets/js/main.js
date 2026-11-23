@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderVisual = () => renderBody(contentArea);
 
     const history = classic.setupHistory({form, editor, toolbar, onRestore: changed => {
-        if (mode === 'preview' && changed.some(name => name === 'featured_media_id' || name === 'category_id')) {
+        if (mode === 'preview' && changed.some(name => name === 'featured_media_id' || name === 'category_id' || name.startsWith('page_display['))) {
             preview.show();
             return;
         }

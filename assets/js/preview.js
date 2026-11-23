@@ -5,6 +5,7 @@ window.NexaPressClassicEditor.setupPreview = ({editor, modeTabs, form, textarea,
     const id = Number(form.dataset.editorId || 0);
     const url = id > 0 ? base + '/' + id : base;
     const sanitize = window.NexaPressClassicEditor.sanitizeHtml;
+    const displayNames = ['page_display[title]', 'page_display[width]', 'page_display[sections]'];
 
     const tab = document.createElement('button');
     tab.type = 'button';
@@ -68,20 +69,20 @@ window.NexaPressClassicEditor.setupPreview = ({editor, modeTabs, form, textarea,
         const doc = frame.contentDocument;
         titles = [...doc.querySelectorAll('[data-nx-editor-field="title"]')];
         bodies = [...doc.querySelectorAll('[data-nx-editor-field="body"]')];
-        if (!titles.length || !bodies.length) {
+        if (!bodies.length) {
             fail('プレビューの編集欄を読み込めませんでした。');
             return;
         }
         const field = titles[0];
         body = bodies[0];
-        editable(field, 'タイトル', false);
+        if (field) editable(field, 'タイトル', false);
         editable(body, '本文', true);
         updateTitle();
         const html = sanitize(textarea.value);
         body.innerHTML = html;
         mirrorBody(html);
 
-        field.addEventListener('input', event => {
+        field?.addEventListener('input', event => {
             const text = field.textContent.replace(/[\r\n]+/g, ' ');
             const value = Array.from(text).slice(0, title.maxLength > 0 ? title.maxLength : 255).join('');
             if (title.value !== value) {
@@ -90,7 +91,7 @@ window.NexaPressClassicEditor.setupPreview = ({editor, modeTabs, form, textarea,
             }
             updateTitle();
         });
-        field.addEventListener('keydown', event => {
+        field?.addEventListener('keydown', event => {
             if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) {
                 event.preventDefault();
                 editStart(body);
@@ -114,7 +115,7 @@ window.NexaPressClassicEditor.setupPreview = ({editor, modeTabs, form, textarea,
         request = controller;
         const fields = new FormData();
         const data = new FormData(form);
-        for (const name of ['_csrf_token', 'title', 'content', 'category_id', 'featured_media_id']) {
+        for (const name of ['_csrf_token', 'title', 'content', 'category_id', 'featured_media_id', ...displayNames]) {
             if (data.has(name)) fields.set(name, String(data.get(name)));
         }
         try {
@@ -138,6 +139,9 @@ window.NexaPressClassicEditor.setupPreview = ({editor, modeTabs, form, textarea,
         }
     }
 
+    form.addEventListener('change', event => {
+        if (!panel.hidden && displayNames.includes(event.target.name)) show();
+    });
     retry.addEventListener('click', show);
     title.addEventListener('input', updateTitle);
     panel.addEventListener('click', event => {

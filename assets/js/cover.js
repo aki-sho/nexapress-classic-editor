@@ -2,13 +2,16 @@ window.NexaPressClassicEditor.setupCover = ({editor, panel, openMedia, getConten
     const layoutEnabled = window.NexaPressClassicEditorConfig?.coverLayoutEnabled === true;
     const colorsEnabled = window.NexaPressClassicEditorConfig?.coverColorsEnabled === true;
     const marginMaxPixels = window.NexaPressClassicEditorConfig?.coverMarginMaxPixels;
+    const usesPageWidth = window.NexaPressClassicEditorConfig?.coverUsesPageWidth === true;
     const heightChoices = {'240': '最小 240 px', '400': '最小 400 px', '560': '最小 560 px',
         '720': '最小 720 px', screen: '画面いっぱい'};
     if (layoutEnabled) Object.assign(heightChoices, {auto: '自動（中身に合わせる）', fixed: '固定（px）'});
     const overlays = {black: '黒', white: '白', navy: 'ネイビー', green: '深緑'};
     const placements = window.NexaPressClassicEditorConfig?.placements;
     const fields = {
-        width: ['幅', 'content', {content: '本文幅', wide: 'ワイド', full: '全幅'}],
+        width: ['カバーの横幅', 'content', usesPageWidth
+            ? {content: '配置先いっぱい', wide: 'ワイド（全幅ページ用）', full: '画面いっぱい（全幅ページ用）'}
+            : {content: '本文幅', wide: 'ワイド', full: '全幅'}],
         ...(window.NexaPressClassicEditorConfig?.coverContentWidthEnabled ? {'content-width': ['中身の幅', 'standard', {
             standard: '標準（最大1080 px）', wide: 'ワイド（最大1440 px）', full: 'カバーの幅いっぱい',
         }]} : {}),
@@ -106,7 +109,10 @@ window.NexaPressClassicEditor.setupCover = ({editor, panel, openMedia, getConten
             const style = selected.ownerDocument.defaultView.getComputedStyle(selected);
             for (const input of marginInputs) {
                 const margin = input.dataset.coverMargin === 'top' ? style.marginBlockStart : style.marginBlockEnd;
-                input.placeholder = margin.endsWith('px') ? margin.slice(0, -2) : '';
+                const attribute = 'data-nx-cover-margin-' + input.dataset.coverMargin;
+                if (!selected.hasAttribute(attribute) && input !== document.activeElement && margin.endsWith('px')) {
+                    input.value = String(Math.round(parseFloat(margin)));
+                }
             }
         }
 
@@ -208,6 +214,7 @@ window.NexaPressClassicEditor.setupCover = ({editor, panel, openMedia, getConten
             // Read the applied margins after the cover layout updates.
             requestAnimationFrame(schedulePosition);
         });
+        input.addEventListener('blur', schedulePosition);
     }
 
     function show(cover, asBlock) {
@@ -251,6 +258,8 @@ window.NexaPressClassicEditor.setupCover = ({editor, panel, openMedia, getConten
                 input.value = setting(cover, name) ?? fields[name][1];
             }
         }
+        const widthInput = controls.querySelector('[data-cover-setting="width"]');
+        widthInput.closest('label').hidden = cover.parentNode !== getContentArea();
         if (colorsEnabled) {
             const opacity = setting(cover, 'opacity');
             if (overlayInput.value === 'none' && Number(opacity) > 0) overlayInput.value = 'black';

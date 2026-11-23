@@ -168,6 +168,7 @@ window.NexaPressClassicEditor.createTemplate = (inlineBlocks = false) => {
             <button type="button" data-command="removeFormat">
                 書式解除
             </button>
+            <button type="submit" data-editor-save>保存</button>
         </div>
 
         <div
