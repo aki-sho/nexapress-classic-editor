@@ -9,6 +9,9 @@ window.NexaPressClassicEditor.setupCover = ({editor, panel, openMedia, getConten
     const placements = window.NexaPressClassicEditorConfig?.placements;
     const fields = {
         width: ['幅', 'content', {content: '本文幅', wide: 'ワイド', full: '全幅'}],
+        ...(window.NexaPressClassicEditorConfig?.coverContentWidthEnabled ? {'content-width': ['中身の幅', 'standard', {
+            standard: '標準（最大1080 px）', wide: 'ワイド（最大1440 px）', full: 'カバーの幅いっぱい',
+        }]} : {}),
         height: ['高さ', '400', heightChoices],
         padding: ['内側の余白', '32', {'0': 'なし', '16': '16 px', '32': '32 px', '64': '64 px'}],
         horizontal: ['横の揃え', 'center', {left: '左揃え', center: '中央揃え', right: '右揃え'}],
