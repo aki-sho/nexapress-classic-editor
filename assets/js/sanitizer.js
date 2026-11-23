@@ -2,17 +2,21 @@ window.NexaPressClassicEditor = window.NexaPressClassicEditor || {};
 
 (() => {
     const editor = window.NexaPressClassicEditor;
+    const groups = ['data-nx-placement', 'data-nx-layout-width', 'data-nx-layout-gap', 'data-nx-buttons-edge'];
+    const buttons = ['data-nx-button-kind', 'data-nx-button-size', 'data-nx-button-icon', 'data-nx-button-radius',
+        'data-nx-button-background', 'data-nx-button-color', 'data-nx-button-border'];
     const allowedAttributes = {
-        p: ['align'], br: [], hr: [],
+        p: ['align', ...groups], br: [], hr: [],
         h1: ['align'], h2: ['align'], h3: ['align'], h4: ['align'], h5: ['align'], h6: ['align'],
         strong: [], b: [], em: [], i: [], u: [], s: [], strike: [], del: [], mark: [], small: [], sup: [], sub: [],
         blockquote: ['cite'], pre: [], code: [],
         ul: [], ol: ['start'], li: ['value'],
-        a: ['href', 'target', 'rel'], img: ['src', 'alt', 'width', 'height', 'loading', 'data-nx-cover-pop'],
+        a: ['href', 'target', 'rel', ...buttons], img: ['src', 'alt', 'width', 'height', 'loading', 'data-nx-cover-pop'],
         figure: [], figcaption: [],
         table: [], thead: [], tbody: [], tfoot: [], tr: [],
         th: ['colspan', 'rowspan', 'align'], td: ['colspan', 'rowspan', 'align'],
-        div: ['align', 'data-nx-cover-height', 'data-nx-cover-margin-top', 'data-nx-cover-margin-bottom'],
+        div: ['align', 'data-nx-cover-height', 'data-nx-cover-margin-top', 'data-nx-cover-margin-bottom',
+            ...groups, 'data-nx-columns-align', 'data-nx-column-width'],
         span: [], font: ['color', 'size'],
     };
     const globalAttributes = ['class', 'style', 'title'];
@@ -77,12 +81,35 @@ window.NexaPressClassicEditor = window.NexaPressClassicEditor || {};
         return number >= min && number <= max ? String(number) : null;
     };
 
-    const attributeValue = (name, original) => {
+    const attributeValue = (name, original, element) => {
         const value = original.trim();
         const lower = value.toLowerCase();
         if (value === '') return name === 'alt' ? '' : null;
 
+        if (groups.includes(name) && !element.matches('.nx-article-columns, .nx-article-buttons, .nx-article-cover')) return null;
+        if (buttons.includes(name) && !element.matches('a.nx-article-button')) return null;
+
         switch (name) {
+            case 'data-nx-placement':
+                return Object.hasOwn(window.NexaPressClassicEditorConfig?.placements || {}, value) ? value : null;
+            case 'data-nx-layout-width':
+                return integer(value, 1, 100);
+            case 'data-nx-column-width':
+                return element.matches('.nx-article-column') ? integer(value, 1, 100) : null;
+            case 'data-nx-columns-align':
+                return element.matches('.nx-article-columns') && ['start', 'center', 'end', 'stretch'].includes(value) ? value : null;
+            case 'data-nx-buttons-edge':
+                return element.matches('.nx-article-buttons') && value === 'bottom' ? value : null;
+            case 'data-nx-layout-gap': case 'data-nx-button-radius':
+                return integer(value, 0, 64);
+            case 'data-nx-button-kind':
+                return ['fill', 'outline', 'text'].includes(value) ? value : null;
+            case 'data-nx-button-size':
+                return ['small', 'medium', 'large'].includes(value) ? value : null;
+            case 'data-nx-button-icon':
+                return ['arrow', 'external', 'download'].includes(value) ? value : null;
+            case 'data-nx-button-background': case 'data-nx-button-color': case 'data-nx-button-border':
+                return /^#[\da-f]{6}$/i.test(value) ? lower : null;
             case 'href': case 'cite': return editor.safeUrl(value);
             case 'src': return editor.safeUrl(value, true);
             case 'align': return alignments.includes(lower) ? lower : null;
@@ -127,7 +154,7 @@ window.NexaPressClassicEditor = window.NexaPressClassicEditor || {};
             for (const node of source.childNodes) template.content.append(node.cloneNode(true));
         }
         for (const element of template.content.querySelectorAll('*')) {
-            if (editor.isEmptyContinuation(element)) {
+            if (editor.isEmptyContinuation(element) || element.hasAttribute('data-nx-editor-gap')) {
                 element.remove();
                 continue;
             }
@@ -143,7 +170,7 @@ window.NexaPressClassicEditor = window.NexaPressClassicEditor || {};
 
             const allowed = allowedAttributes[tag];
             for (const {name, value} of Array.from(element.attributes)) {
-                const safe = allowed.includes(name) || globalAttributes.includes(name) ? attributeValue(name, value) : null;
+                const safe = allowed.includes(name) || globalAttributes.includes(name) ? attributeValue(name, value, element) : null;
                 if (safe === null) element.removeAttribute(name);
                 else element.setAttribute(name, safe);
             }

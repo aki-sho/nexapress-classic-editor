@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         if (mode === 'preview') preview.mirrorBody(html);
+        window.nxApplyLayoutPlacement?.(mode === 'preview' ? area.ownerDocument.body : area);
         window.nxRefreshArticleCovers?.(mode === 'preview' ? area.ownerDocument.body : area);
     }
 
@@ -55,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         blocks.decorate(area);
         if (mode === 'preview') preview.mirrorBody(html);
+        window.nxApplyLayoutPlacement?.(mode === 'preview' ? area.ownerDocument.body : area);
         window.nxRefreshArticleCovers?.(mode === 'preview' ? area.ownerDocument.body : area);
     }
     const renderVisual = () => renderBody(contentArea);
@@ -75,12 +77,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }});
 
     preview = classic.setupPreview({
-        editor, modeTabs, form, textarea,
+        editor, modeTabs, form, textarea, editStart: blocks.editStart,
         onReady: area => {
             selectionManager.watch(area.ownerDocument);
             history.watch(area.ownerDocument);
             blocks.attach(area);
             area.addEventListener('input', synchronize);
+            window.nxApplyLayoutPlacement?.(area.ownerDocument.body);
             window.nxRefreshArticleCovers?.(area.ownerDocument.body);
         },
     });

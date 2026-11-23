@@ -1,4 +1,4 @@
-window.NexaPressClassicEditor.setupPreview = ({editor, modeTabs, form, textarea, onReady}) => {
+window.NexaPressClassicEditor.setupPreview = ({editor, modeTabs, form, textarea, onReady, editStart}) => {
     const base = window.NexaPressClassicEditorConfig?.previewUrls?.[form.dataset.editorKind];
     const title = form.elements.namedItem('title');
     if (!base || !(title instanceof HTMLInputElement)) return null;
@@ -91,9 +91,9 @@ window.NexaPressClassicEditor.setupPreview = ({editor, modeTabs, form, textarea,
             updateTitle();
         });
         field.addEventListener('keydown', event => {
-            if (event.key === 'Enter' && !event.isComposing) {
+            if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) {
                 event.preventDefault();
-                body.focus();
+                editStart(body);
             }
         });
         doc.addEventListener('click', event => {

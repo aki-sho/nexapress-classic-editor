@@ -6,12 +6,14 @@ window.NexaPressClassicEditor.setupCover = ({editor, panel, openMedia, getConten
         '720': '最小 720 px', screen: '画面いっぱい'};
     if (layoutEnabled) Object.assign(heightChoices, {auto: '自動（中身に合わせる）', fixed: '固定（px）'});
     const overlays = {black: '黒', white: '白', navy: 'ネイビー', green: '深緑'};
+    const placements = window.NexaPressClassicEditorConfig?.placements;
     const fields = {
         width: ['幅', 'content', {content: '本文幅', wide: 'ワイド', full: '全幅'}],
         height: ['高さ', '400', heightChoices],
         padding: ['内側の余白', '32', {'0': 'なし', '16': '16 px', '32': '32 px', '64': '64 px'}],
-        horizontal: ['横の位置', 'center', {left: '左', center: '中央', right: '右'}],
-        vertical: ['縦の位置', 'center', {top: '上', center: '中央', bottom: '下'}],
+        horizontal: ['横の揃え', 'center', {left: '左揃え', center: '中央揃え', right: '右揃え'}],
+        ...(placements ? {placement: ['配置', 'center', placements]} :
+            {vertical: ['縦の位置', 'center', {top: '上', center: '中央', bottom: '下'}]}),
         ...(colorsEnabled ? {background: ['背景色（下地）', 'auto', {
             auto: '自動', white: '白', black: '黒', navy: '濃紺', transparent: '透過',
         }]} : {}),
@@ -239,6 +241,9 @@ window.NexaPressClassicEditor.setupCover = ({editor, panel, openMedia, getConten
             const name = input.dataset.coverSetting;
             if (name === 'height' && layoutEnabled && cover.dataset.nxCoverHeight) {
                 input.value = cover.dataset.nxCoverHeight === 'auto' ? 'auto' : 'fixed';
+            } else if (name === 'placement') {
+                input.value = cover.dataset.nxPlacement || (cover.classList.contains('nx-cover-vertical-top')
+                    ? 'flex-start' : cover.classList.contains('nx-cover-vertical-bottom') ? 'flex-end' : 'center');
             } else {
                 input.value = setting(cover, name) ?? fields[name][1];
             }
@@ -270,6 +275,13 @@ window.NexaPressClassicEditor.setupCover = ({editor, panel, openMedia, getConten
         const [, defaultValue, choices] = fields[name];
         const value = input.value;
         if (!Object.hasOwn(choices, value)) return;
+        if (name === 'placement') {
+            clearSetting(cover, 'vertical');
+            cover.dataset.nxPlacement = value;
+            synchronize();
+            schedulePosition();
+            return;
+        }
         clearSetting(cover, name);
         if (colorsEnabled && name === 'overlay') {
             if (!setting(cover, 'background')) cover.classList.add('nx-cover-background-auto');

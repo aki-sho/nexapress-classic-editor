@@ -90,9 +90,9 @@ window.NexaPressClassicEditor.createTemplate = (inlineBlocks = false) => {
             <select
                 class="classic-editor-align"
                 data-command-select
-                title="配置"
+                title="文字揃え"
             >
-                <option value="">配置</option>
+                <option value="">文字揃え</option>
                 <option value="justifyLeft">左</option>
                 <option value="justifyCenter">中央</option>
                 <option value="justifyRight">右</option>

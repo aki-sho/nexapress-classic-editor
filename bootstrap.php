@@ -40,6 +40,10 @@ add_action('admin_head', function (): void {
     if (is_file(BASE_PATH . '/public/assets/js/article-cover.js')) {
         echo '<script src="' . e(nx_asset_url('assets/js/article-cover.js')) . '" defer></script>';
     }
+    if (is_file(BASE_PATH . '/public/assets/css/layout-placement.css')) {
+        echo '<link rel="stylesheet" href="' . e(nx_asset_url('assets/css/layout-placement.css')) . '">';
+        echo '<script src="' . e(nx_asset_url('assets/js/layout-placement.js')) . '" defer></script>';
+    }
     $cssFiles = [
         __DIR__ . '/assets/css/editor.css',
         __DIR__ . '/assets/css/toolbar.css',
@@ -73,6 +77,7 @@ add_action('admin_footer', function (): void {
     $versionPath = BASE_PATH . '/config/version.php';
     $version = is_file($versionPath) ? (require $versionPath) : [];
     $config = [
+        'placements' => class_exists(\app\Core\LayoutPlacement::class) ? \app\Core\LayoutPlacement::OPTIONS : null,
         'serverSanitizesHtml' => class_exists(\app\Core\HtmlSanitizer::class),
         'coverEnabled' => $supportsPreview && is_file(BASE_PATH . '/public/assets/css/article-cover.css'),
         'coverLayoutEnabled' => is_file(BASE_PATH . '/public/assets/js/article-cover.js'),
@@ -118,6 +123,7 @@ add_action('admin_footer', function (): void {
         __DIR__ . '/assets/js/preview.js',
         __DIR__ . '/assets/js/block-picker.js',
         __DIR__ . '/assets/js/cover.js',
+        __DIR__ . '/assets/js/block-layout.js',
         __DIR__ . '/assets/js/blocks.js',
         __DIR__ . '/assets/js/link.js',
         __DIR__ . '/assets/js/fullscreen.js',

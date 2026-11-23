@@ -90,7 +90,8 @@ window.NexaPressClassicEditor.setupBlockPicker = ({editor, getContentArea, group
         for (const {section, choices} of sections) {
             let visible = false;
             for (const {button, block, terms} of choices) {
-                const available = (!block.columns || !current.scope.matches('.nx-article-column')) &&
+                const available = (window.NexaPressClassicEditorConfig?.placements ||
+                    !block.columns || !current.scope.matches('.nx-article-column')) &&
                     (block.id !== 'cover' || current.scope === current.area);
                 button.hidden = !available || !query.every(word => terms.includes(word));
                 visible ||= !button.hidden;

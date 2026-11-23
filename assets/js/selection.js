@@ -40,7 +40,10 @@ window.NexaPressClassicEditor.createSelectionManager = getContentArea => {
         if (!area) return null;
         const doc = area.ownerDocument;
         let position = range();
-        window.NexaPressClassicEditor.blockScope(area, position?.startContainer).focus({preventScroll: true});
+        const node = position?.startContainer;
+        const element = node?.nodeType === Node.ELEMENT_NODE ? node : node?.parentElement;
+        const editable = element?.closest('[data-nx-button-label]') || window.NexaPressClassicEditor.blockScope(area, node);
+        editable.focus({preventScroll: true});
         if (!position && fallbackToEnd) {
             position = doc.createRange();
             position.selectNodeContents(area);
