@@ -1,6 +1,7 @@
 window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, selectionManager, synchronize, openMedia, enabled}) => {
     const classic = window.NexaPressClassicEditor;
     const scopeFor = classic.blockScope;
+    const columnScope = '.nx-article-column, [data-nx-column-area]';
     const coverEnabled = enabled && window.NexaPressClassicEditorConfig?.coverEnabled === true;
     const headingLevels = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
     const selectableObjects = enabled ? 'img, figure.nx-article-image, hr' : 'figure.nx-article-image, hr';
@@ -54,6 +55,7 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         panel, synchronize,
         prepare: () => { const area = getContentArea(); if (area) decorate(area); },
         selectLabel: label => focus(label, true),
+        editColumnArea,
     }) : null;
     const attached = new WeakSet();
     let activeScope = null;
@@ -143,8 +145,11 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         blockLayout?.decorate(area);
         for (const group of area.querySelectorAll('.nx-article-columns')) {
             group.contentEditable = 'false';
-            [...group.children].filter(node => node.classList.contains('nx-article-column')).forEach((column, index) => {
-                const label = (index + 1) + '列目';
+            let columnNumber = 0;
+            for (const column of group.children) {
+                if (!column.matches(columnScope)) continue;
+                const position = column.dataset.nxColumnArea;
+                const label = position ? (position === 'above' ? '上の共通欄' : '下の共通欄') : (++columnNumber) + '列目';
                 column.contentEditable = 'true';
                 column.tabIndex = 0;
                 column.dataset.nxColumn = label;
@@ -152,7 +157,7 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
                 column.setAttribute('role', 'textbox');
                 column.setAttribute('aria-multiline', 'true');
                 ensureEditingLine(column);
-            });
+            }
         }
         for (const node of area.querySelectorAll('figure.nx-article-image, hr')) node.contentEditable = 'false';
         ensureEditingLine(area);
@@ -160,6 +165,24 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
             addGaps(area);
             for (const scope of area.querySelectorAll('[data-nx-column], [data-nx-cover-content]')) addGaps(scope);
         }
+    }
+
+
+    function editColumnArea(group, position) {
+        const area = getContentArea();
+        if (!area?.contains(group)) return;
+        let slot = group.querySelector(':scope > [data-nx-column-area="' + position + '"]');
+        if (!slot) {
+            slot = group.ownerDocument.createElement('div');
+            slot.dataset.nxColumnArea = position;
+            if (position === 'above') group.prepend(slot);
+            else group.append(slot);
+        }
+        decorate(area);
+        slot.scrollIntoView({block: 'nearest'});
+        focus(slot.lastElementChild || slot);
+        selectAt(area, slot.ownerDocument.getSelection()?.anchorNode);
+        synchronize();
     }
 
     function blockType(block) {
@@ -191,7 +214,7 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
             activeBlock = block;
             error();
         }
-        const column = scope?.matches('.nx-article-column') ? scope : null;
+        const column = scope?.matches(columnScope) ? scope : null;
         if (activeScope !== scope) {
             activeScope?.removeAttribute('data-nx-column-active');
             activeScope = scope;
@@ -484,7 +507,7 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         const button = event.target.closest('button');
         const area = getContentArea();
         if (!button || button.disabled || !area) return;
-        if (button.hasAttribute('data-block-group') && activeScope?.matches('.nx-article-column')) {
+        if (button.hasAttribute('data-block-group') && activeScope?.matches(columnScope)) {
             selectWholeBlock(area, activeScope.parentElement);
             return;
         }

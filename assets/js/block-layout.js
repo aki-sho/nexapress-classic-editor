@@ -1,4 +1,4 @@
-window.NexaPressClassicEditor.setupBlockLayout = ({panel, synchronize, prepare, selectLabel}) => {
+window.NexaPressClassicEditor.setupBlockLayout = ({panel, synchronize, prepare, selectLabel, editColumnArea}) => {
     const classic = window.NexaPressClassicEditor;
     const placementOptions = window.NexaPressClassicEditorConfig?.placements;
     if (!placementOptions) return null;
@@ -21,6 +21,10 @@ window.NexaPressClassicEditor.setupBlockLayout = ({panel, synchronize, prepare, 
             '<div data-layout-column-fields hidden>' +
                 select('列の上下揃え', 'columnAlign', {start: '上揃え', center: '中央揃え', end: '下揃え', stretch: '高さを揃える'}) +
                 '<div data-layout-column-widths></div>' +
+                '<div data-layout-column-areas>' +
+                    '<button type="button" data-layout-column-area="above"></button>' +
+                    '<button type="button" data-layout-column-area="below"></button>' +
+                '</div>' +
             '</div>' +
             '<div data-layout-button-row hidden>' +
                 select('列内の高さ位置', 'buttonEdge', {'': '通常', bottom: '下端'}) +
@@ -45,6 +49,7 @@ window.NexaPressClassicEditor.setupBlockLayout = ({panel, synchronize, prepare, 
     const widthFields = query('[data-layout-column-widths]');
     const buttonRow = query('[data-layout-button-row]');
     const columnFields = query('[data-layout-column-fields]');
+    const sharedButtons = [...inputs.querySelectorAll('[data-layout-column-area]')];
     const colors = ['buttonBackground', 'buttonColor', 'buttonBorder'];
     let group = null;
     let button = null;
@@ -96,29 +101,38 @@ window.NexaPressClassicEditor.setupBlockLayout = ({panel, synchronize, prepare, 
     function show(block, anchor) {
         const isColumns = block?.matches?.('.nx-article-columns');
         const isRow = !isColumns && isButtonRow(block);
+        const isText = !isColumns && !isRow && block?.matches?.('p, h1, h2, h3, h4, h5, h6');
         const element = anchor?.nodeType === Node.TEXT_NODE ? anchor.parentElement : anchor;
         const candidate = element?.closest?.('a.nx-article-button');
         const selectedButton = (candidate && block?.contains(candidate) ? candidate : null) ||
             (button && block?.contains(button) ? button : null) ||
             (isRow ? block.querySelector(':scope > a.nx-article-button') : null);
-        group = isColumns || isRow ? block : null;
+        group = isColumns || isRow || isText ? block : null;
         button = selectedButton;
         inputs.hidden = !group && !button;
         query('[data-layout-group]').hidden = !group;
         query('[data-layout-button]').hidden = !button;
         columnFields.hidden = !isColumns;
+        field('gap').closest('label').hidden = Boolean(isText);
         buttonRow.hidden = !isRow;
         field('buttonEdge').closest('label').hidden = !group?.parentElement.matches('.nx-article-column');
         error();
         if (group) {
             field('width').value = group.dataset.nxLayoutWidth || '100';
             field('gap').value = group.dataset.nxLayoutGap || (isColumns ? '16' : '12');
-            field('placement').value = group.dataset.nxPlacement ||
-                ({left: 'flex-start', center: 'center', right: 'flex-end'}[group.style.textAlign || group.getAttribute('align')] ?? 'flex-start');
+            const legacyButtonAlignment = isRow && {left: 'flex-start', center: 'center', right: 'flex-end'}[
+                group.style.textAlign || group.getAttribute('align')];
+            field('placement').value = group.dataset.nxPlacement || legacyButtonAlignment || 'flex-start';
             field('columnAlign').value = group.dataset.nxColumnsAlign || 'stretch';
             field('buttonEdge').value = group.dataset.nxButtonsEdge || '';
         }
         if (isColumns) {
+            for (const control of sharedButtons) {
+                const position = control.dataset.layoutColumnArea;
+                const exists = group.querySelector(':scope > [data-nx-column-area="' + position + '"]');
+                const label = position === 'above' ? '上の共通欄' : '下の共通欄';
+                control.textContent = exists ? label + 'を編集' : '＋ ' + label + 'を追加';
+            }
             widthFields.innerHTML = widthsFor(columnsOf(group)).map((width, index) =>
                 '<label>' + (index + 1) + '列目の幅（%）<input type="number" min="1" max="100" step="1" ' +
                 'data-column-width-index="' + index + '" value="' + width + '"></label>').join('');
@@ -193,6 +207,12 @@ window.NexaPressClassicEditor.setupBlockLayout = ({panel, synchronize, prepare, 
         prepare();
         synchronize();
     });
+
+    for (const control of sharedButtons) {
+        control.addEventListener('click', () => {
+            if (group?.matches('.nx-article-columns')) editColumnArea(group, control.dataset.layoutColumnArea);
+        });
+    }
 
     query('[data-layout-add-button]').addEventListener('click', () => {
         if (!isButtonRow(group)) return;

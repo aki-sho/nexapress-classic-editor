@@ -16,7 +16,7 @@ window.NexaPressClassicEditor.contentViewport = area => {
 
 window.NexaPressClassicEditor.blockScope = (area, node) => {
     const element = node?.nodeType === Node.ELEMENT_NODE ? node : node?.parentElement;
-    const scope = element?.closest('.nx-article-column[data-nx-column], .nx-article-cover-content[data-nx-cover-content]');
+    const scope = element?.closest('[data-nx-column], .nx-article-cover-content[data-nx-cover-content]');
     return area.contains(scope) ? scope : area;
 };
 

@@ -2,12 +2,13 @@ window.NexaPressClassicEditor = window.NexaPressClassicEditor || {};
 
 (() => {
     const editor = window.NexaPressClassicEditor;
-    const groups = ['data-nx-placement', 'data-nx-layout-width', 'data-nx-layout-gap', 'data-nx-buttons-edge'];
+    const textLayout = ['align', 'data-nx-placement', 'data-nx-layout-width'];
+    const groupLayout = ['data-nx-layout-gap', 'data-nx-buttons-edge'];
     const buttons = ['data-nx-button-kind', 'data-nx-button-size', 'data-nx-button-icon', 'data-nx-button-radius',
         'data-nx-button-background', 'data-nx-button-color', 'data-nx-button-border'];
     const allowedAttributes = {
-        p: ['align', ...groups], br: [], hr: [],
-        h1: ['align'], h2: ['align'], h3: ['align'], h4: ['align'], h5: ['align'], h6: ['align'],
+        p: [...textLayout, ...groupLayout], br: [], hr: [],
+        h1: textLayout, h2: textLayout, h3: textLayout, h4: textLayout, h5: textLayout, h6: textLayout,
         strong: [], b: [], em: [], i: [], u: [], s: [], strike: [], del: [], mark: [], small: [], sup: [], sub: [],
         blockquote: ['cite'], pre: [], code: [],
         ul: [], ol: ['start'], li: ['value'],
@@ -16,7 +17,7 @@ window.NexaPressClassicEditor = window.NexaPressClassicEditor || {};
         table: [], thead: [], tbody: [], tfoot: [], tr: [],
         th: ['colspan', 'rowspan', 'align'], td: ['colspan', 'rowspan', 'align'],
         div: ['align', 'data-nx-cover-height', 'data-nx-cover-margin-top', 'data-nx-cover-margin-bottom',
-            ...groups, 'data-nx-columns-align', 'data-nx-column-width'],
+            ...textLayout.slice(1), ...groupLayout, 'data-nx-columns-align', 'data-nx-column-width', 'data-nx-column-area'],
         span: [], font: ['color', 'size'],
     };
     const globalAttributes = ['class', 'style', 'title'];
@@ -86,7 +87,10 @@ window.NexaPressClassicEditor = window.NexaPressClassicEditor || {};
         const lower = value.toLowerCase();
         if (value === '') return name === 'alt' ? '' : null;
 
-        if (groups.includes(name) && !element.matches('.nx-article-columns, .nx-article-buttons, .nx-article-cover')) return null;
+        const isGroup = element.matches('.nx-article-columns, .nx-article-buttons, .nx-article-cover');
+        if (groupLayout.includes(name) && !isGroup) return null;
+        if ((name === 'data-nx-placement' || name === 'data-nx-layout-width') &&
+            !isGroup && !element.matches('p, h1, h2, h3, h4, h5, h6')) return null;
         if (buttons.includes(name) && !element.matches('a.nx-article-button')) return null;
 
         switch (name) {
@@ -94,6 +98,9 @@ window.NexaPressClassicEditor = window.NexaPressClassicEditor || {};
                 return Object.hasOwn(window.NexaPressClassicEditorConfig?.placements || {}, value) ? value : null;
             case 'data-nx-layout-width':
                 return integer(value, 1, 100);
+            case 'data-nx-column-area':
+                return element.parentElement?.matches('div.nx-article-columns') && ['above', 'below'].includes(value)
+                    ? value : null;
             case 'data-nx-column-width':
                 return element.matches('.nx-article-column') ? integer(value, 1, 100) : null;
             case 'data-nx-columns-align':
@@ -180,6 +187,9 @@ window.NexaPressClassicEditor = window.NexaPressClassicEditor || {};
             if (tag === 'a' && element.target === '_blank') {
                 element.relList.add('noopener', 'noreferrer');
             }
+        }
+        for (const area of template.content.querySelectorAll('[data-nx-column-area]')) {
+            if (!area.firstElementChild && !area.textContent.trim()) area.remove();
         }
         preservePreformattedBreaks(template.content);
         return template.innerHTML;
