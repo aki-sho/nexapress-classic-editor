@@ -5,7 +5,7 @@ window.NexaPressClassicEditor.setupPreview = ({editor, modeTabs, form, textarea,
     const id = Number(form.dataset.editorId || 0);
     const url = id > 0 ? base + '/' + id : base;
     const sanitize = window.NexaPressClassicEditor.sanitizeHtml;
-    const displayNames = ['page_display[title]', 'page_display[created_at]', 'page_display[width]', 'page_display[sections]'];
+    const displayNames = ['page_display[title]', 'page_display[created_at]', 'page_display[home_link]', 'page_display[width]', 'page_display[sections]'];
 
     const tab = document.createElement('button');
     tab.type = 'button';

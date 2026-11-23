@@ -1,6 +1,6 @@
 window.NexaPressClassicEditor.setupHistory = ({form, editor, toolbar, onRestore}) => {
     const names = ['title', 'slug', 'content', 'excerpt', 'status', 'category_id', 'featured_media_id',
-        'page_display[title]', 'page_display[created_at]', 'page_display[width]', 'page_display[sections]']
+        'page_display[title]', 'page_display[created_at]', 'page_display[home_link]', 'page_display[width]', 'page_display[sections]']
         .filter(name => form.elements.namedItem(name));
     const read = () => names.map(name => form.elements.namedItem(name).value);
     const length = values => values.reduce((total, value) => total + value.length, 0);
