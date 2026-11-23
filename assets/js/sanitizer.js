@@ -17,7 +17,8 @@ window.NexaPressClassicEditor = window.NexaPressClassicEditor || {};
         table: [], thead: [], tbody: [], tfoot: [], tr: [],
         th: ['colspan', 'rowspan', 'align'], td: ['colspan', 'rowspan', 'align'],
         div: ['align', 'data-nx-cover-height', 'data-nx-cover-margin-top', 'data-nx-cover-margin-bottom',
-            ...textLayout.slice(1), ...groupLayout, 'data-nx-columns-align', 'data-nx-column-width', 'data-nx-column-area'],
+            ...textLayout.slice(1), ...groupLayout, 'data-nx-columns-align', 'data-nx-column-width',
+            'data-nx-column-background', 'data-nx-column-area'],
         span: [], font: ['color', 'size'],
     };
     const globalAttributes = ['class', 'style', 'title'];
@@ -103,6 +104,9 @@ window.NexaPressClassicEditor = window.NexaPressClassicEditor || {};
                     ? value : null;
             case 'data-nx-column-width':
                 return element.matches('.nx-article-column') ? integer(value, 1, 100) : null;
+            case 'data-nx-column-background':
+                return element.matches('.nx-article-columns > div.nx-article-column:not([data-nx-column-area])') &&
+                    window.nxColumnBackgroundUrl?.(value) ? value : null;
             case 'data-nx-columns-align':
                 return element.matches('.nx-article-columns') && ['start', 'center', 'end', 'stretch'].includes(value) ? value : null;
             case 'data-nx-buttons-edge':

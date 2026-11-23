@@ -2,6 +2,8 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
     const classic = window.NexaPressClassicEditor;
     const scopeFor = classic.blockScope;
     const columnScope = '.nx-article-column, [data-nx-column-area]';
+    const columnBackgroundEnabled = enabled && typeof window.nxColumnBackgroundUrl === 'function';
+    const backgroundColumn = '.nx-article-columns > div.nx-article-column:not([data-nx-column-area])';
     const coverEnabled = enabled && window.NexaPressClassicEditorConfig?.coverEnabled === true;
     const headingLevels = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
     const selectableObjects = enabled ? 'img, figure.nx-article-image, hr' : 'figure.nx-article-image, hr';
@@ -34,7 +36,10 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
     bar.setAttribute('aria-label', '選択中の部品の操作');
     bar.hidden = true;
     bar.innerHTML =
-        '<span data-block-target hidden></span><button type="button" data-block-group aria-label="カラム全体を選択" hidden>カラム全体</button>' +
+        '<span data-block-target hidden></span>' +
+        (columnBackgroundEnabled ? '<button type="button" data-column-background="choose" hidden>列の背景画像を設定</button>' +
+            '<button type="button" data-column-background="remove" hidden>列の背景画像を外す</button>' : '') +
+        '<button type="button" data-block-group aria-label="カラム全体を選択" hidden>カラム全体</button>' +
         '<button type="button" data-cover-group hidden>カバー全体</button>' +
         '<div class="classic-editor-block-selection" data-block-selection hidden>' +
         '<button type="button" data-block-select aria-pressed="false"><span data-block-label></span>を選択</button>' +
@@ -49,6 +54,8 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         '<p data-block-error role="alert" hidden></p>';
     const find = selector => bar.querySelector(selector) || panel.querySelector(selector);
     const blockSelect = find('[data-block-select]');
+    const chooseColumnBackground = find('[data-column-background="choose"]');
+    const removeColumnBackground = find('[data-column-background="remove"]');
     const alt = find('[data-block-alt]');
     const link = find('[data-block-link]');
     const blockLayout = enabled ? classic.setupBlockLayout({
@@ -203,6 +210,24 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         status.hidden = !message;
     }
 
+    function showColumnBackground(column) {
+        if (!columnBackgroundEnabled) return;
+        const visible = column?.matches(backgroundColumn);
+        const hasImage = visible && column.hasAttribute('data-nx-column-background');
+        chooseColumnBackground.hidden = !visible;
+        chooseColumnBackground.textContent = hasImage ? '列の背景画像を変更' : '列の背景画像を設定';
+        removeColumnBackground.hidden = !hasImage;
+    }
+
+    function updateColumnBackground(column, filename) {
+        if (!getContentArea()?.contains(column)) return false;
+        if (filename) column.dataset.nxColumnBackground = filename;
+        else column.removeAttribute('data-nx-column-background');
+        showColumnBackground(activeScope);
+        synchronize();
+        return true;
+    }
+
     function select(block, scope = null, whole = false, anchor = null) {
         if (classic.isEmptyContinuation(block)) block = null;
         wholeBlockSelected = Boolean(block && whole);
@@ -226,6 +251,7 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         const location = find('[data-block-target]');
         location.hidden = !column;
         location.textContent = column?.dataset.nxColumn || '';
+        showColumnBackground(column);
         find('[data-block-group]').hidden = !column;
         find('[data-cover-group]').hidden = !cover;
         bar.hidden = !scope && !block;
@@ -498,6 +524,23 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         if (event.repeat) return;
         removalKey = event.key;
         removeBlock(area, block);
+    });
+
+    chooseColumnBackground?.addEventListener('click', () => {
+        const column = activeScope;
+        if (!column?.matches(backgroundColumn)) return;
+        openMedia(image => {
+            const filename = image.url?.split('/').pop();
+            const url = window.nxColumnBackgroundUrl(filename);
+            return Boolean(url && new URL(image.url, document.baseURI).href === url &&
+                updateColumnBackground(column, filename));
+        });
+    });
+    removeColumnBackground?.addEventListener('click', () => {
+        const column = activeScope;
+        if (!column?.matches(backgroundColumn)) return;
+        const hasFocus = document.activeElement === removeColumnBackground;
+        if (updateColumnBackground(column, null) && hasFocus) chooseColumnBackground.focus();
     });
 
     bar.addEventListener('mousedown', event => {
