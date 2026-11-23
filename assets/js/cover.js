@@ -33,6 +33,13 @@ window.NexaPressClassicEditor.setupCover = ({editor, panel, openMedia, getConten
     const tools = document.createElement('div');
     tools.className = 'classic-editor-cover-tools';
     tools.hidden = true;
+    const quickActions = document.createElement('div');
+    quickActions.className = 'classic-editor-cover-actions';
+    const quickBackground = document.createElement('button');
+    quickBackground.type = 'button';
+    quickBackground.dataset.coverQuickBackground = '';
+    quickBackground.textContent = '背景画像を設定';
+
     const openButton = document.createElement('button');
     openButton.type = 'button';
     openButton.textContent = 'カバー設定';
@@ -54,7 +61,8 @@ window.NexaPressClassicEditor.setupCover = ({editor, panel, openMedia, getConten
                     '<input data-cover-fixed-pixels type="number" min="80" max="3000" step="1" required disabled></label>' : '') +
                 (name === 'padding' ? marginFields : '')
         ).join('') + '</div>';
-    tools.append(openButton, controls);
+    quickActions.append(quickBackground, openButton);
+    tools.append(quickActions, controls);
     editor.append(tools);
 
     const imageOptions = document.createElement('div');
@@ -153,7 +161,7 @@ window.NexaPressClassicEditor.setupCover = ({editor, panel, openMedia, getConten
 
     function setExpanded(expanded) {
         controls.hidden = !expanded;
-        openButton.hidden = expanded;
+        quickActions.hidden = expanded;
         updateNumberInputs();
         schedulePosition();
     }
@@ -168,6 +176,9 @@ window.NexaPressClassicEditor.setupCover = ({editor, panel, openMedia, getConten
         selectCover(selected);
         setExpanded(true);
         backgroundButton.focus({preventScroll: true});
+    });
+    quickBackground.addEventListener('click', () => {
+        if (selected && getContentArea()?.contains(selected)) chooseBackground(selected);
     });
     tools.addEventListener('keydown', event => {
         if (event.key !== 'Escape' || controls.hidden) return;
@@ -245,7 +256,9 @@ window.NexaPressClassicEditor.setupCover = ({editor, panel, openMedia, getConten
         schedulePosition();
         if (!cover) return;
         const image = background(cover);
-        backgroundButton.textContent = image ? '背景画像を変更' : '背景画像を選ぶ';
+        const backgroundLabel = image ? '背景画像を変更' : '背景画像を設定';
+        backgroundButton.textContent = backgroundLabel;
+        quickBackground.textContent = backgroundLabel;
         removeButton.hidden = !image;
         for (const input of inputs) {
             const name = input.dataset.coverSetting;
@@ -326,20 +339,24 @@ window.NexaPressClassicEditor.setupCover = ({editor, panel, openMedia, getConten
             backgroundButton.focus({preventScroll: true});
             synchronize();
         } else if (action === 'background') {
-            openMedia(image => {
-                const src = window.NexaPressClassicEditor.safeUrl(image.url, true);
-                if (!src || !getContentArea()?.contains(cover)) return false;
-                const img = background(cover) || cover.ownerDocument.createElement('img');
-                img.className = 'nx-article-cover-background';
-                img.alt = '';
-                img.setAttribute('src', src);
-                if (img.parentElement !== cover) cover.prepend(img);
-                refresh();
-                synchronize();
-                return true;
-            });
+            chooseBackground(cover);
         }
     });
+
+    function chooseBackground(cover) {
+        openMedia(image => {
+            const src = window.NexaPressClassicEditor.safeUrl(image.url, true);
+            if (!src || !getContentArea()?.contains(cover)) return false;
+            const img = background(cover) || cover.ownerDocument.createElement('img');
+            img.className = 'nx-article-cover-background';
+            img.alt = '';
+            img.setAttribute('src', src);
+            if (img.parentElement !== cover) cover.prepend(img);
+            refresh();
+            synchronize();
+            return true;
+        });
+    }
 
     function create(doc) {
         const cover = doc.createElement('div');
