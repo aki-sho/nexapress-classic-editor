@@ -89,7 +89,8 @@ add_action('admin_footer', function (): void {
         'previewUrls' => $supportsPreview ? [
             'page' => url('admin/pages/editor-preview'),
             'post' => url('admin/posts/editor-preview'),
-        ] : null,
+        ] + (method_exists(\app\Core\EditorPreview::class, 'renderCategory')
+            ? ['category' => url('admin/categories/editor-preview')] : []) : null,
         'csrfToken' => class_exists(\app\Core\Csrf::class) ? \app\Core\Csrf::token() : '',
         'canUpload' => !$supportsPreview || \app\Core\Permission::can('media.manage'),
         'mediaUrl' => url(

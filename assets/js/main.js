@@ -62,7 +62,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderVisual = () => renderBody(contentArea);
 
     const history = classic.setupHistory({form, editor, toolbar, onRestore: changed => {
-        if (mode === 'preview' && changed.some(name => name === 'featured_media_id' || name === 'category_id' || name.startsWith('page_display['))) {
+        const previewFields = ['featured_media_id', 'category_id', 'posts_mode', 'show_title'];
+        if (mode === 'preview' && changed.some(name => previewFields.includes(name) || name.startsWith('page_display['))) {
             preview.show();
             return;
         }

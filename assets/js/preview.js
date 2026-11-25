@@ -1,11 +1,13 @@
 window.NexaPressClassicEditor.setupPreview = ({editor, modeTabs, form, textarea, onReady, editStart}) => {
     const base = window.NexaPressClassicEditorConfig?.previewUrls?.[form.dataset.editorKind];
-    const title = form.elements.namedItem('title');
-    if (!base || !(title instanceof HTMLInputElement)) return null;
+    const titleField = form.elements.namedItem('title');
+    const title = titleField instanceof HTMLInputElement ? titleField : null;
+    if (!base || (!title && form.dataset.editorKind !== 'category')) return null;
     const id = Number(form.dataset.editorId || 0);
     const url = id > 0 ? base + '/' + id : base;
     const sanitize = window.NexaPressClassicEditor.sanitizeHtml;
-    const displayNames = ['page_display[title]', 'page_display[created_at]', 'page_display[home_link]', 'page_display[width]', 'page_display[sections]'];
+    const displayNames = ['page_display[title]', 'page_display[created_at]', 'page_display[home_link]', 'page_display[width]', 'page_display[sections]',
+        'posts_mode', 'show_title'];
 
     const tab = document.createElement('button');
     tab.type = 'button';
@@ -42,6 +44,7 @@ window.NexaPressClassicEditor.setupPreview = ({editor, modeTabs, form, textarea,
     }
 
     function updateTitle() {
+        if (!title) return;
         for (const field of titles) {
             if (field.textContent !== title.value) field.textContent = title.value;
         }
@@ -73,7 +76,7 @@ window.NexaPressClassicEditor.setupPreview = ({editor, modeTabs, form, textarea,
             fail('プレビューの編集欄を読み込めませんでした。');
             return;
         }
-        const field = titles[0];
+        const field = title ? titles[0] : null;
         body = bodies[0];
         if (field) editable(field, 'タイトル', false);
         editable(body, '本文', true);
@@ -143,7 +146,7 @@ window.NexaPressClassicEditor.setupPreview = ({editor, modeTabs, form, textarea,
         if (!panel.hidden && displayNames.includes(event.target.name)) show();
     });
     retry.addEventListener('click', show);
-    title.addEventListener('input', updateTitle);
+    title?.addEventListener('input', updateTitle);
     panel.addEventListener('click', event => {
         const button = event.target.closest('[data-preview-device]');
         if (!button) return;
