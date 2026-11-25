@@ -37,6 +37,9 @@ window.NexaPressClassicEditor.setupPreview = ({editor, modeTabs, form, textarea,
     function clear() {
         request?.abort();
         request = null;
+        // Disconnect the observed body before the iframe loses its window.
+        // This lets queued cover-layout callbacks skip the old preview.
+        body?.ownerDocument.body?.remove();
         body = null;
         titles = [];
         bodies = [];

@@ -43,6 +43,7 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         '<button type="button" data-cover-group hidden>カバー全体</button>' +
         '<div class="classic-editor-block-selection" data-block-selection hidden>' +
         '<button type="button" data-block-select aria-pressed="false"><span data-block-label></span>を選択</button>' +
+        '<button type="button" data-block-replace-image hidden>画像を変更</button>' +
         '<button type="button" data-block-move="up" aria-label="ブロックを上へ移動">↑</button>' +
         '<button type="button" data-block-move="down" aria-label="ブロックを下へ移動">↓</button>' +
         '<button type="button" data-block-remove>ブロックを削除</button></div>';
@@ -232,8 +233,6 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         if (classic.isEmptyContinuation(block)) block = null;
         wholeBlockSelected = Boolean(block && whole);
         blockSelect.setAttribute('aria-pressed', String(wholeBlockSelected));
-        if (wholeBlockSelected) blockSelect.setAttribute('aria-keyshortcuts', 'Delete Backspace');
-        else blockSelect.removeAttribute('aria-keyshortcuts');
         if (activeBlock !== block) {
             activeBlock?.removeAttribute?.('data-nx-block-active');
             activeBlock = block;
@@ -247,6 +246,9 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         }
         activeBlock?.setAttribute?.('data-nx-block-active', '');
         const kind = blockType(block);
+        const image = kind === 'image' ? blockImage(block) : null;
+        if (wholeBlockSelected) blockSelect.setAttribute('aria-keyshortcuts', image ? 'Enter Delete Backspace' : 'Delete Backspace');
+        else blockSelect.removeAttribute('aria-keyshortcuts');
         const cover = containingCover(block, scope);
         const location = find('[data-block-target]');
         location.hidden = !column;
@@ -256,14 +258,14 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         find('[data-cover-group]').hidden = !cover;
         bar.hidden = !scope && !block;
         find('[data-block-selection]').hidden = !block;
-        find('[data-block-label]').textContent = kind === 'columns' ? 'カラム全体' : labels.get(kind) || '';
+        find('[data-block-label]').textContent = image ? '画像ブロック' : (kind === 'columns' ? 'カラム全体' : labels.get(kind) || '');
+        find('[data-block-replace-image]').hidden = !image;
         const isCover = kind === 'cover';
         coverEditor?.show(isCover ? block : cover, isCover);
         const canMove = block?.nodeType === Node.ELEMENT_NODE && block.parentElement === (scope || getContentArea());
         const next = canMove ? adjacentBlock(block, 'nextElementSibling') : null;
         find('[data-block-move="up"]').disabled = !canMove || !adjacentBlock(block, 'previousElementSibling');
         find('[data-block-move="down"]').disabled = !next || classic.isEmptyContinuation(next);
-        const image = kind === 'image' ? blockImage(block) : null;
         find('[data-block-image-options]').hidden = !image;
         if (image) alt.value = image.alt;
         coverEditor?.showImage(cover && image ? image : null);
@@ -284,6 +286,19 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         let element = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
         while (element !== scope && element.parentElement !== scope) element = element.parentElement;
         select(element === scope || isGap(element) ? null : element, innerScope, false, node);
+    }
+
+    function editAfterImage(area, block) {
+        const scope = scopeFor(area, block);
+        while (block.parentElement !== scope) block = block.parentElement;
+        const next = adjacentBlock(block, 'nextElementSibling');
+        const line = classic.isEmptyContinuation(next) ? next : paragraphBefore(scope, block.nextSibling);
+        if (line === next) {
+            focus(line, false, true);
+            selectAt(area, line);
+        }
+        if (blockLayout) addGaps(scope);
+        line.scrollIntoView({block: 'nearest'});
     }
 
     function selectWholeBlock(area, block) {
@@ -515,11 +530,17 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
     }
 
     blockSelect.addEventListener('keydown', event => {
-        if (!wholeBlockSelected || !['Delete', 'Backspace'].includes(event.key) || event.defaultPrevented ||
+        if (!wholeBlockSelected || event.defaultPrevented ||
             event.isComposing || event.keyCode === 229 || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
         const area = getContentArea();
         const block = activeBlock;
         if (!block || !area?.contains(block)) return;
+        if (event.key === 'Enter' && blockType(block) === 'image') {
+            event.preventDefault();
+            if (!event.repeat) editAfterImage(area, block);
+            return;
+        }
+        if (!['Delete', 'Backspace'].includes(event.key)) return;
         event.preventDefault();
         if (event.repeat) return;
         removalKey = event.key;
@@ -564,6 +585,23 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         if (button === blockSelect) {
             if (wholeBlockSelected) select(block, activeScope);
             else selectWholeBlock(area, block);
+            return;
+        }
+        if (button.hasAttribute('data-block-replace-image') && blockType(block) === 'image') {
+            const img = blockImage(block);
+            if (!img) return;
+            openMedia(image => {
+                const url = classic.safeUrl(image.url, true);
+                if (!url || getContentArea() !== area || !area.contains(img)) return false;
+                if (img.getAttribute('src') !== url) {
+                    img.setAttribute('src', url);
+                    img.removeAttribute('height');
+                }
+                img.alt = image.description || image.title || '';
+                if (activeBlock === block) alt.value = img.alt;
+                synchronize();
+                return true;
+            });
             return;
         }
         const {blockMove} = button.dataset;
