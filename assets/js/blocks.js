@@ -55,6 +55,7 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         '<p data-block-error role="alert" hidden></p>';
     const find = selector => bar.querySelector(selector) || panel.querySelector(selector);
     const blockSelect = find('[data-block-select]');
+    const replaceImage = find('[data-block-replace-image]');
     const chooseColumnBackground = find('[data-column-background="choose"]');
     const removeColumnBackground = find('[data-column-background="remove"]');
     const alt = find('[data-block-alt]');
@@ -68,6 +69,7 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
     const attached = new WeakSet();
     let activeScope = null;
     let activeBlock = null;
+    let activeImage = null;
     let wholeBlockSelected = false;
     let removalKey = null;
 
@@ -205,6 +207,11 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
 
     const blockImage = block => block?.localName === 'img' ? block : block?.querySelector?.('img');
 
+    function selectedImage(block, anchor) {
+        if (anchor?.localName === 'img' && block.contains(anchor)) return anchor;
+        return block.contains(activeImage) ? activeImage : blockImage(block);
+    }
+
     function error(message = '') {
         const status = find('[data-block-error]');
         status.textContent = message;
@@ -246,7 +253,8 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         }
         activeBlock?.setAttribute?.('data-nx-block-active', '');
         const kind = blockType(block);
-        const image = kind === 'image' ? blockImage(block) : null;
+        const image = kind === 'image' ? selectedImage(block, anchor) : null;
+        activeImage = image;
         if (wholeBlockSelected) blockSelect.setAttribute('aria-keyshortcuts', image ? 'Enter Delete Backspace' : 'Delete Backspace');
         else blockSelect.removeAttribute('aria-keyshortcuts');
         const cover = containingCover(block, scope);
@@ -259,7 +267,7 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         bar.hidden = !scope && !block;
         find('[data-block-selection]').hidden = !block;
         find('[data-block-label]').textContent = image ? '画像ブロック' : (kind === 'columns' ? 'カラム全体' : labels.get(kind) || '');
-        find('[data-block-replace-image]').hidden = !image;
+        replaceImage.hidden = !image;
         const isCover = kind === 'cover';
         coverEditor?.show(isCover ? block : cover, isCover);
         const canMove = block?.nodeType === Node.ELEMENT_NODE && block.parentElement === (scope || getContentArea());
@@ -301,9 +309,9 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         line.scrollIntoView({block: 'nearest'});
     }
 
-    function selectWholeBlock(area, block) {
+    function selectWholeBlock(area, block, anchor = null) {
         const scope = scopeFor(area, block);
-        select(block, scope === area ? null : scope, true);
+        select(block, scope === area ? null : scope, true, anchor);
         area.ownerDocument.getSelection()?.removeAllRanges();
         selectionManager.clear();
         blockSelect.focus({preventScroll: true});
@@ -348,7 +356,7 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
                 event.preventDefault();
                 const container = coverEditor && object.matches('.nx-article-cover-background')
                     ? object.parentElement : object.closest('figure');
-                selectWholeBlock(area, area.contains(container) ? container : object);
+                selectWholeBlock(area, area.contains(container) ? container : object, object);
                 return;
             }
             const anchor = selection?.anchorNode;
@@ -535,7 +543,7 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         const area = getContentArea();
         const block = activeBlock;
         if (!block || !area?.contains(block)) return;
-        if (event.key === 'Enter' && blockType(block) === 'image') {
+        if (event.key === 'Enter' && activeImage) {
             event.preventDefault();
             if (!event.repeat) editAfterImage(area, block);
             return;
@@ -587,18 +595,16 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
             else selectWholeBlock(area, block);
             return;
         }
-        if (button.hasAttribute('data-block-replace-image') && blockType(block) === 'image') {
-            const img = blockImage(block);
-            if (!img) return;
+        if (button === replaceImage && activeImage) {
+            const img = activeImage;
             openMedia(image => {
                 const url = classic.safeUrl(image.url, true);
                 if (!url || getContentArea() !== area || !area.contains(img)) return false;
-                if (img.getAttribute('src') !== url) {
-                    img.setAttribute('src', url);
-                    img.removeAttribute('height');
-                }
+                if (img.src === new URL(url, img.baseURI).href) return true;
+                img.setAttribute('src', url);
+                img.removeAttribute('height');
                 img.alt = image.description || image.title || '';
-                if (activeBlock === block) alt.value = img.alt;
+                if (activeImage === img) alt.value = img.alt;
                 synchronize();
                 return true;
             });
@@ -616,9 +622,8 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         synchronize();
     });
     alt.addEventListener('input', event => {
-        const img = blockImage(activeBlock);
-        if (!img) return;
-        img.alt = alt.value;
+        if (!activeImage) return;
+        activeImage.alt = alt.value;
         synchronize(event);
     });
     link.addEventListener('change', () => {
