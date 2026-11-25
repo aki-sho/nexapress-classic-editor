@@ -108,6 +108,7 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
 
     const structuralBlocks = 'h1,h2,h3,h4,h5,h6,figure,table,hr,.nx-article-columns,.nx-article-cover,img,blockquote,ul,ol,pre,.nx-article-buttons,p:has(> a.nx-article-button)';
     const isGap = node => node?.hasAttribute?.('data-nx-editor-gap');
+    const isInsertedLine = node => node?.dataset?.nxEditorContinuation === 'inserted';
     const adjacentBlock = (node, property) => {
         let sibling = node[property];
         while (isGap(sibling)) sibling = sibling[property];
@@ -132,7 +133,7 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
 
     function paragraphBefore(scope, before) {
         const line = scope.ownerDocument.createElement('p');
-        line.dataset.nxEditorContinuation = '';
+        line.dataset.nxEditorContinuation = 'inserted';
         line.append(scope.ownerDocument.createElement('br'));
         scope.insertBefore(line, before);
         focus(line);
@@ -237,7 +238,8 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
     }
 
     function select(block, scope = null, whole = false, anchor = null) {
-        if (classic.isEmptyContinuation(block)) block = null;
+        const emptyLine = classic.isEmptyContinuation(block);
+        if (emptyLine && !isInsertedLine(block)) block = null;
         wholeBlockSelected = Boolean(block && whole);
         blockSelect.setAttribute('aria-pressed', String(wholeBlockSelected));
         if (activeBlock !== block) {
@@ -270,7 +272,7 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         replaceImage.hidden = !image;
         const isCover = kind === 'cover';
         coverEditor?.show(isCover ? block : cover, isCover);
-        const canMove = block?.nodeType === Node.ELEMENT_NODE && block.parentElement === (scope || getContentArea());
+        const canMove = !emptyLine && block?.nodeType === Node.ELEMENT_NODE && block.parentElement === (scope || getContentArea());
         const next = canMove ? adjacentBlock(block, 'nextElementSibling') : null;
         find('[data-block-move="up"]').disabled = !canMove || !adjacentBlock(block, 'previousElementSibling');
         find('[data-block-move="down"]').disabled = !next || classic.isEmptyContinuation(next);
@@ -381,10 +383,19 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
                 event.target.click();
                 return;
             }
-            if (event.key !== 'Enter' || event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) return;
+            const deleting = ['Delete', 'Backspace'].includes(event.key);
+            if ((!deleting && event.key !== 'Enter') || event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) return;
             const selection = doc.getSelection();
             const anchor = selection?.anchorNode;
             const element = anchor?.nodeType === Node.ELEMENT_NODE ? anchor : anchor?.parentElement;
+            if (deleting) {
+                const line = element?.closest('p');
+                if (!selection?.isCollapsed || !area.contains(line) || !isInsertedLine(line) || !classic.isEmptyContinuation(line)) return;
+                event.preventDefault();
+                removalKey = event.key;
+                removeBlock(area, line);
+                return;
+            }
             if (element?.closest('[data-nx-button-label]')) {
                 event.preventDefault();
                 return;
