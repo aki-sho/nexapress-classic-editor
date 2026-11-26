@@ -51,6 +51,13 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
     panel.className = 'classic-editor-blocks';
     panel.innerHTML =
         '<label data-block-image-options hidden>代替テキスト<input data-block-alt type="text" maxlength="255"></label>' +
+        '<div class="classic-editor-image-layout" data-block-image-layout hidden>' +
+            '<label>画像の配置<select data-block-image-align>' +
+                '<option value="">初期設定</option><option value="left">左寄せ</option>' +
+                '<option value="center">中央</option><option value="right">右寄せ</option>' +
+            '</select></label>' +
+            '<label>画像の幅（px）<input data-block-image-width type="number" min="1" max="5000" step="1" placeholder="元のサイズ"></label>' +
+        '</div>' +
         '<label data-block-link-options hidden>ボタンのリンク先<input data-block-link type="text"></label>' +
         '<p data-block-error role="alert" hidden></p>';
     const find = selector => bar.querySelector(selector) || panel.querySelector(selector);
@@ -59,6 +66,8 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
     const chooseColumnBackground = find('[data-column-background="choose"]');
     const removeColumnBackground = find('[data-column-background="remove"]');
     const alt = find('[data-block-alt]');
+    const imageAlign = find('[data-block-image-align]');
+    const imageWidth = find('[data-block-image-width]');
     const link = find('[data-block-link]');
     const blockLayout = enabled ? classic.setupBlockLayout({
         panel, synchronize,
@@ -213,6 +222,20 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         return block.contains(activeImage) ? activeImage : blockImage(block);
     }
 
+    function imageFigure(image) {
+        const figure = image?.closest('figure');
+        return getContentArea()?.contains(figure) ? figure : null;
+    }
+
+    function showImageLayout(image) {
+        find('[data-block-image-layout]').hidden = !image;
+        imageWidth.setCustomValidity('');
+        if (!image) return;
+        const alignment = imageFigure(image)?.style.textAlign || '';
+        imageAlign.value = ['left', 'center', 'right'].includes(alignment) ? alignment : '';
+        imageWidth.value = image.getAttribute('width') || '';
+    }
+
     function error(message = '') {
         const status = find('[data-block-error]');
         status.textContent = message;
@@ -278,6 +301,7 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         find('[data-block-move="down"]').disabled = !next || classic.isEmptyContinuation(next);
         find('[data-block-image-options]').hidden = !image;
         if (image) alt.value = image.alt;
+        showImageLayout(image);
         coverEditor?.showImage(cover && image ? image : null);
         const button = !blockLayout && kind === 'button' ? block.querySelector('a.nx-article-button') : null;
         find('[data-block-link-options]').hidden = !button;
@@ -635,6 +659,41 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
     alt.addEventListener('input', event => {
         if (!activeImage) return;
         activeImage.alt = alt.value;
+        synchronize(event);
+    });
+    imageAlign.addEventListener('change', event => {
+        const area = getContentArea();
+        const image = activeImage;
+        const alignment = imageAlign.value;
+        if (!area?.contains(image) || !['', 'left', 'center', 'right'].includes(alignment)) return;
+        let figure = imageFigure(image);
+        if (!figure && !alignment) return;
+        if (!figure) {
+            figure = image.ownerDocument.createElement('figure');
+            figure.className = 'nx-article-image';
+            image.replaceWith(figure);
+            figure.append(image);
+            decorate(area);
+            selectAt(area, image);
+        }
+        if (alignment) figure.style.textAlign = alignment;
+        else figure.style.removeProperty('text-align');
+        imageAlign.value = alignment;
+        synchronize(event);
+    });
+    imageWidth.addEventListener('input', () => imageWidth.setCustomValidity(''));
+    imageWidth.addEventListener('change', event => {
+        if (!getContentArea()?.contains(activeImage)) return;
+        const value = imageWidth.value.trim();
+        if (imageWidth.validity.badInput || (value && (!/^\d+$/.test(value) || Number(value) < 1 || Number(value) > 5000))) {
+            imageWidth.setCustomValidity('画像の幅は1〜5000の整数で入力してください。空欄で元のサイズに戻ります。');
+            imageWidth.reportValidity();
+            return;
+        }
+        imageWidth.setCustomValidity('');
+        if (value) activeImage.setAttribute('width', String(Number(value)));
+        else activeImage.removeAttribute('width');
+        activeImage.removeAttribute('height');
         synchronize(event);
     });
     link.addEventListener('change', () => {
