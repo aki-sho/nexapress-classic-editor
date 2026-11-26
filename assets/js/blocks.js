@@ -81,6 +81,11 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
     let activeImage = null;
     let wholeBlockSelected = false;
     let removalKey = null;
+    const clipboard = enabled ? classic.setupBlockClipboard({
+        editor, getContentArea, selectButton: blockSelect,
+        selectedBlock: () => wholeBlockSelected ? activeBlock : null,
+        insert: pasteBlocks,
+    }) : null;
 
     if (enabled) {
         toolbar.prepend(bar);
@@ -280,7 +285,8 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         const kind = blockType(block);
         const image = kind === 'image' ? selectedImage(block, anchor) : null;
         activeImage = image;
-        if (wholeBlockSelected) blockSelect.setAttribute('aria-keyshortcuts', image ? 'Enter Delete Backspace' : 'Delete Backspace');
+        if (wholeBlockSelected) blockSelect.setAttribute('aria-keyshortcuts',
+            (image ? 'Enter ' : '') + 'Delete Backspace Control+C Meta+C Control+V Meta+V');
         else blockSelect.removeAttribute('aria-keyshortcuts');
         const cover = containingCover(block, scope);
         const location = find('[data-block-target]');
@@ -351,6 +357,7 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         select(null);
         if (attached.has(area)) return;
         attached.add(area);
+        clipboard?.attach(area);
         picker?.attach(area);
         coverEditor?.attach(area);
         const doc = area.ownerDocument;
@@ -542,6 +549,62 @@ window.NexaPressClassicEditor.setupBlocks = ({editor, toolbar, getContentArea, s
         } else {
             focus(node.querySelector('[data-nx-button-label]') || node.querySelector('li, td, a') || node, true);
         }
+    }
+
+    function pasteBlocks(html, event) {
+        const area = getContentArea();
+        if (!area || !html) return;
+        const doc = area.ownerDocument;
+        const template = doc.createElement('template');
+        template.innerHTML = html;
+        const last = template.content.lastElementChild;
+        if (!last) return;
+        let scope;
+        let before;
+        if (wholeBlockSelected && area.contains(activeBlock)) {
+            scope = activeBlock.parentElement;
+            before = activeBlock.nextSibling;
+        } else {
+            const selection = doc.getSelection();
+            const current = selection?.rangeCount ? selection.getRangeAt(0) : null;
+            const range = (area.contains(current?.commonAncestorContainer) ? current : selectionManager.range())?.cloneRange();
+            if (!range) {
+                error('本文内の貼り付ける場所を選択してください。');
+                return;
+            }
+            scope = scopeFor(area, range.startContainer);
+            if (!scope.contains(range.endContainer)) {
+                error('同じ列またはカバー内で貼り付ける場所を選択してください。');
+                return;
+            }
+            range.deleteContents();
+            if (range.startContainer === scope) before = scope.childNodes[range.startOffset] || null;
+            else {
+                let line = range.startContainer;
+                while (line.parentNode !== scope) line = line.parentNode;
+                before = line.nextSibling;
+                if (line.nodeType === Node.TEXT_NODE) {
+                    before = line.splitText(range.startOffset);
+                    if (!line.data) line.remove();
+                } else if (line.matches('p, h1, h2, h3, h4, h5, h6')) {
+                    const tail = doc.createRange();
+                    tail.setStart(range.startContainer, range.startOffset);
+                    tail.setEnd(line, line.childNodes.length);
+                    const after = line.cloneNode(false);
+                    after.append(tail.extractContents());
+                    if (after.textContent.trim() || after.querySelector('img, .nx-article-button')) {
+                        line.after(after);
+                        before = after;
+                    }
+                    if (!line.textContent.trim() && !line.querySelector('img, .nx-article-button')) line.remove();
+                }
+            }
+        }
+        scope.insertBefore(template.content, before);
+        decorate(area);
+        selectWholeBlock(area, last);
+        error();
+        synchronize(event);
     }
 
     function removeBlock(area, block) {

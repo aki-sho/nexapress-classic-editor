@@ -127,6 +127,7 @@ add_action('admin_footer', function (): void {
         __DIR__ . '/assets/js/block-picker.js',
         __DIR__ . '/assets/js/cover.js',
         __DIR__ . '/assets/js/block-layout.js',
+        __DIR__ . '/assets/js/block-clipboard.js',
         __DIR__ . '/assets/js/blocks.js',
         __DIR__ . '/assets/js/link.js',
         __DIR__ . '/assets/js/fullscreen.js',
