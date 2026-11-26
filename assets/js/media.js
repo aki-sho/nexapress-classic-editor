@@ -40,9 +40,10 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
                 accept=".jpg,.jpeg,.png,.gif,.webp"
                 data-media-file
                 required
+                disabled
             >
 
-            <button type="submit" data-media-submit>
+            <button type="submit" data-media-submit disabled>
                 画像を登録
             </button>
         </form>
@@ -55,11 +56,11 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
             </select>
         </label>
 
-        <p class="classic-editor-media-status" role="status">
-            画像を読み込んでいます。
-        </p>
-
-        <div class="classic-editor-media-grid"></div>
+        <div class="classic-editor-media-message">
+            <p class="classic-editor-media-status" role="status">画像を読み込んでいます。</p>
+            <button type="button" data-media-retry hidden>再読み込み</button>
+        </div>
+        <div class="classic-editor-media-grid" inert></div>
     `;
 
     document.body.append(dialog);
@@ -88,6 +89,7 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
         '[data-media-submit]'
     );
     const folder = dialog.querySelector('[data-media-folder]');
+    const retry = dialog.querySelector('[data-media-retry]');
     const config = window.NexaPressClassicEditorConfig || {};
 
     if (
@@ -113,6 +115,22 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
     contentArea.before(feedback);
     let opening = null;
     let images = [];
+    let phase = 'idle';
+    const isCurrent = request => dialog.open && opening === request;
+
+    function setPhase(value) {
+        phase = value;
+        const busy = ['loading', 'preparing', 'uploading'].includes(value);
+        const ready = value === 'ready';
+        dialog.dataset.mediaState = value;
+        grid.setAttribute('aria-busy', String(busy));
+        grid.inert = !ready;
+        grid.querySelectorAll('button').forEach(button => { button.disabled = !ready; });
+        folder.disabled = !ready;
+        uploadInput.disabled = uploadButton.disabled = config.canUpload === false || busy || value === 'idle';
+        retry.hidden = value !== 'error' || !config.mediaUrl;
+        retry.disabled = busy;
+    }
 
     const formatNumber = new Intl.NumberFormat('ja-JP', {maximumFractionDigits: 1});
     const byteLabel = bytes => {
@@ -127,10 +145,10 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
         folder.length = 2;
         for (const entry of folders) folder.add(new Option(entry.name, entry.id));
         folder.value = Array.from(folder.options).some(option => option.value === last) ? last : '';
-        folder.disabled = false;
     }
 
     const insertImage = (image) => {
+        if (!dialog.open || !opening) return;
         const insert = opening.insert;
         dialog.close();
         if (!insert(image)) {
@@ -153,7 +171,8 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
             return;
         }
 
-        status.hidden = true;
+        status.hidden = false;
+        status.textContent = '画像を選択してください。';
 
         filtered.forEach(image => {
             const button = document.createElement('button');
@@ -163,6 +182,7 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
             const title = document.createElement('span');
 
             button.type = 'button';
+            button.disabled = phase !== 'ready';
             button.className = 'classic-editor-media-item';
             thumb.className = 'classic-editor-media-thumb';
             title.className = 'classic-editor-media-name';
@@ -186,59 +206,79 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
             button.append(thumb, title);
 
             button.addEventListener('click', () => {
-                insertImage(image);
+                if (phase === 'ready') insertImage(image);
             });
 
             grid.append(button);
         });
     };
 
-    folder.addEventListener('change', renderImages);
+    folder.addEventListener('change', () => { if (phase === 'ready') renderImages(); });
 
     /*
      * NexaPressから画像一覧を取得
      */
     const loadImages = async (request) => {
+        if (!isCurrent(request)) return;
+        request.listController?.abort();
+        const controller = new AbortController();
+        request.listController = controller;
+        setPhase('loading');
         if (!config.mediaUrl) {
             status.textContent =
                 'メディア一覧のURLが設定されていません。';
 
+            setPhase('error');
             return;
         }
 
         status.hidden = false;
         status.textContent = '画像を読み込んでいます。';
-        folder.disabled = true;
         grid.replaceChildren();
+        images = [];
+        const timeout = window.setTimeout(() => controller.abort(), 15000);
 
         try {
-            const response = await fetch(config.mediaUrl);
+            const response = await fetch(config.mediaUrl, {signal: controller.signal});
 
             if (!response.ok) {
                 throw new Error('画像一覧を取得できませんでした。');
             }
 
             const data = await response.json();
-            if (!dialog.open || opening !== request) return;
+            if (!isCurrent(request) || request.listController !== controller) return;
+            if (!Array.isArray(data.images)) throw new Error('画像一覧の形式が正しくありません。');
+            window.clearTimeout(timeout);
 
             images = Array.isArray(data.images) ? data.images : [];
             setFolders(Array.isArray(data.folders) ? data.folders : []);
+            setPhase('preparing');
             renderImages();
+            // Unlock after the completed layout has been painted. Lazy images have fixed boxes.
+            await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+            if (isCurrent(request) && request.listController === controller && !controller.signal.aborted) setPhase('ready');
         } catch (error) {
-            if (!dialog.open || opening !== request) return;
+            if (!isCurrent(request) || request.listController !== controller) return;
             status.hidden = false;
             status.textContent =
-                '画像一覧の読み込みに失敗しました。';
+                error.name === 'AbortError'
+                    ? '画像一覧の読み込みが時間切れになりました。再読み込みしてください。'
+                    : '画像一覧の読み込みに失敗しました。';
+            setPhase('error');
+        } finally {
+            window.clearTimeout(timeout);
         }
     };
+    retry.addEventListener('click', () => { if (opening && phase === 'error') loadImages(opening); });
 
     /*
      * 新しい画像を登録
      */
     uploadForm.addEventListener('submit', async (event) => {
         event.preventDefault();
-        if (config.canUpload === false || uploadButton.disabled) return;
+        if (!dialog.open || config.canUpload === false || uploadButton.disabled || !['ready', 'error'].includes(phase)) return;
         const request = opening;
+        const restorePhase = phase;
 
         if (!config.mediaUploadUrl) {
             status.hidden = false;
@@ -263,8 +303,9 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
         formData.append('media_file', file);
         if (config.csrfToken) formData.append('_csrf_token', config.csrfToken);
 
-        uploadButton.disabled = true;
-        uploadInput.disabled = true;
+        const controller = new AbortController();
+        request.uploadController = controller;
+        setPhase('uploading');
 
         status.hidden = false;
         status.textContent = '画像を登録しています。';
@@ -274,7 +315,8 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
                 config.mediaUploadUrl,
                 {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    signal: controller.signal
                 }
             );
 
@@ -288,6 +330,7 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
             }
 
             const data = await response.json();
+            if (!isCurrent(request)) return;
 
             if (!response.ok) {
                 throw new Error(
@@ -305,20 +348,12 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
 
             folder.value = '';
             await loadImages(request);
-            if (!dialog.open || opening !== request) return;
+            if (!isCurrent(request) || phase !== 'ready') return;
 
             status.hidden = false;
             status.textContent =
                 data.message || '画像を登録しました。';
 
-            window.setTimeout(() => {
-                if (
-                    status.textContent ===
-                    '画像を登録しました。'
-                ) {
-                    status.hidden = true;
-                }
-            }, 2000);
         } catch (error) {
             if (!dialog.open || opening !== request) return;
             status.hidden = false;
@@ -327,9 +362,7 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
                 error instanceof Error
                     ? error.message
                     : '画像の登録に失敗しました。';
-        } finally {
-            uploadButton.disabled = false;
-            uploadInput.disabled = false;
+            setPhase(restorePhase);
         }
     });
 
@@ -338,9 +371,12 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
      */
     const open = (insert = addImage) => {
         if (dialog.open) return;
+        opening?.listController?.abort();
+        opening?.uploadController?.abort();
         opening = {insert};
         selectionManager.save();
         feedback.hidden = true;
+        setPhase('loading');
         dialog.showModal();
         loadImages(opening);
     };
@@ -351,6 +387,13 @@ window.NexaPressClassicEditor.setupMedia = (options) => {
      */
     closeButton.addEventListener('click', () => {
         dialog.close();
+    });
+    dialog.addEventListener('close', () => {
+        if (dialog.open) return;
+        opening?.listController?.abort();
+        opening?.uploadController?.abort();
+        opening = null;
+        setPhase('idle');
     });
     return open;
 };

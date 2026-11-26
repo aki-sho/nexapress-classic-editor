@@ -4,6 +4,8 @@
 
 .classic-editor-media-dialog {
     width: min(900px, 90vw);
+    height: min(760px, 85vh);
+    height: min(760px, 85dvh);
     max-height: 85vh;
     max-height: 85dvh;
     padding: 0;
@@ -47,10 +49,24 @@
 ======================================== */
 
 .classic-editor-media-status {
-    flex: none;
+    flex: 1;
     margin: 0;
-    padding: 20px;
     color: #64748b;
+}
+
+.classic-editor-media-message {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 12px;
+    min-height: 44px;
+    padding: 8px 20px;
+    box-sizing: border-box;
+}
+
+.classic-editor-media-message [hidden],
+.classic-editor-media-upload[hidden] {
+    display: none;
 }
 
 
@@ -81,6 +97,8 @@
 
 .classic-editor-media-grid {
     display: grid;
+    flex: 1 1 0;
+    align-content: start;
     grid-template-columns: repeat(
         auto-fill,
         minmax(min(150px, 100%), 1fr)
@@ -89,6 +107,7 @@
     min-height: 0;
     padding: 20px;
     overflow-y: auto;
+    scrollbar-gutter: stable;
 }
 
 .classic-editor-media-item {
@@ -104,6 +123,10 @@
 .classic-editor-media-item:hover {
     border-color: #2563eb;
     box-shadow: 0 0 0 2px #bfdbfe;
+}
+
+.classic-editor-media-item:disabled {
+    cursor: wait;
 }
 
 .classic-editor-media-thumb {
