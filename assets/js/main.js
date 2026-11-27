@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     classic.setupToolbar({toolbar, selectionManager, synchronize, history});
-    classic.setupLinks({toolbar, selectionManager, synchronize});
+    classic.setupLinks({toolbar, getContentArea, selectionManager, synchronize});
     classic.setupFullscreen(editor);
     const openMedia = classic.setupMedia({toolbar, contentArea, selectionManager, addImage: blocks.addImage});
     classic.setupHtmlTemplates({editor, textarea});

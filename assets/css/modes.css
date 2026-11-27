@@ -84,3 +84,19 @@
     background: #fff;
 }
 .classic-editor-frame.is-mobile iframe { max-width: 390px; }
+
+.classic-editor-link-dialog {
+    box-sizing: border-box;
+    width: min(420px, calc(100% - 32px));
+    padding: 20px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+}
+.classic-editor-link-dialog::backdrop { background: rgb(15 23 42 / .45); }
+.classic-editor-link-dialog form,
+.classic-editor-link-dialog label { display: grid; gap: 6px; }
+.classic-editor-link-dialog form { gap: 14px; }
+.classic-editor-link-dialog h2 { margin: 0; font-size: 1.125rem; }
+.classic-editor-link-dialog input,
+.classic-editor-link-dialog select { box-sizing: border-box; width: 100%; min-width: 0; }
+.classic-editor-link-actions { display: flex; justify-content: flex-end; gap: 8px; }

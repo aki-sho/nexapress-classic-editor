@@ -34,6 +34,7 @@ window.NexaPressClassicEditor.setupBlockLayout = ({panel, synchronize, prepare, 
         '<div class="classic-editor-layout-group" data-layout-button hidden>' +
             '<label>表示文字<input type="text" data-layout-field="label"></label>' +
             '<label>ボタンのリンク先<input type="text" data-layout-field="href"></label>' +
+            select('リンクの開き方', 'linkTarget', classic.linkTargets) +
             select('見た目', 'buttonKind', {fill: '塗りつぶし', outline: '枠線', text: 'テキストリンク'}) +
             select('サイズ', 'buttonSize', {small: '小', medium: '中', large: '大'}) +
             select('アイコン', 'buttonIcon', {'': 'なし', arrow: '右矢印 →', external: '斜め矢印 ↗', download: '下矢印 ↓'}) +
@@ -141,6 +142,7 @@ window.NexaPressClassicEditor.setupBlockLayout = ({panel, synchronize, prepare, 
             const kind = button.dataset.nxButtonKind || 'fill';
             field('label').value = labelFor(button)?.textContent ?? button.textContent;
             field('href').value = button.getAttribute('href') || '';
+            field('linkTarget').value = button.target === '_blank' ? '_blank' : '_self';
             field('buttonKind').value = kind;
             field('buttonSize').value = button.dataset.nxButtonSize || 'medium';
             field('buttonIcon').value = button.dataset.nxButtonIcon || '';
@@ -197,6 +199,8 @@ window.NexaPressClassicEditor.setupBlockLayout = ({panel, synchronize, prepare, 
                 return;
             }
             button.setAttribute('href', url);
+        } else if (button && layoutField === 'linkTarget') {
+            classic.setLinkTarget(button, control.value);
         } else if (button && layoutField === 'label') {
             labelFor(button).textContent = control.value;
         } else if (button && ['buttonKind', 'buttonSize', 'buttonIcon', 'buttonRadius', ...colors].includes(layoutField)) {
